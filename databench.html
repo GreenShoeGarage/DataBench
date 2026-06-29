@@ -1,0 +1,2174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DataBench v1.4.1</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --card: #ffffff;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #a78bfa;
+      --danger: #fb7185;
+      --ok: #34d399;
+      --border: rgba(255,255,255,.12);
+      --canvas-bg: #f8fafc;
+      --canvas-grid: rgba(15,23,42,.06);
+      --shadow: 0 10px 30px rgba(0,0,0,.25);
+      --radius: 16px;
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      overflow: hidden;
+    }
+    button, input, select, textarea { font: inherit; }
+    a.button { text-decoration:none; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; padding:.58rem .78rem; background:var(--panel-2); color:var(--text); cursor:pointer; transition:transform .08s ease,filter .15s ease,background .15s ease; }
+    a.button:hover { filter: brightness(1.08); }
+    a.button.ghost { background: transparent; border: 1px solid var(--border); }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: .58rem .78rem;
+      background: var(--panel-2);
+      color: var(--text);
+      cursor: pointer;
+      transition: transform .08s ease, filter .15s ease, background .15s ease;
+    }
+    button:hover { filter: brightness(1.08); }
+    button:active { transform: translateY(1px); }
+    button.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #07111f; font-weight: 800; }
+    button.danger { background: rgba(251,113,133,.16); color: #fecdd3; }
+    button.small { padding: .35rem .5rem; font-size: .82rem; }
+    input, select, textarea {
+      width: 100%;
+      color: var(--text);
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .55rem .65rem;
+      outline: none;
+    }
+    textarea { min-height: 82px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    input[type="color"] { padding: .15rem; height: 2.3rem; }
+    input[type="file"] { padding: .45rem; }
+    label { display: block; font-size: .78rem; color: var(--muted); margin: .7rem 0 .28rem; }
+
+    .app {
+      --left-col: 320px;
+      --right-col: 360px;
+      display: grid;
+      grid-template-columns: var(--left-col) 1fr var(--right-col);
+      grid-template-rows: auto minmax(0, 1fr);
+      height: 100vh;
+      transition: grid-template-columns .2s ease;
+    }
+    .app.left-collapsed { --left-col: 54px; }
+    .app.right-collapsed { --right-col: 54px; }
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .55rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(2,6,23,.85);
+      backdrop-filter: blur(16px);
+      z-index: 5;
+    }
+    .brand { display: flex; gap: .75rem; align-items: center; }
+    .logo {
+      width: 38px; height: 38px; border-radius: 12px;
+      background: conic-gradient(from 220deg, var(--accent), var(--accent-2), var(--ok), var(--accent));
+      box-shadow: 0 0 0 4px rgba(255,255,255,.05);
+    }
+    .brand h1 { font-size: 1.05rem; margin: 0; letter-spacing: .02em; }
+    .version { font-size: .72rem; color: var(--ok); border: 1px solid rgba(52,211,153,.45); border-radius: 999px; padding: .08rem .35rem; vertical-align: middle; }
+    .brand p { margin: .05rem 0 0; font-size: .77rem; color: var(--muted); }
+    .toolbar { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; justify-content: flex-end; }
+    .tool-group { display:flex; align-items:center; gap:.35rem; padding:.25rem; border:1px solid var(--border); border-radius:14px; background:rgba(255,255,255,.04); }
+    .tool-group button, .tool-group label, .tool-group a.button { font-size:.82rem; padding:.45rem .58rem; }
+    .tool-group .primary { padding:.48rem .68rem; }
+
+    aside {
+      position: relative;
+      overflow: hidden;
+      padding: 1rem;
+      border-right: 1px solid var(--border);
+      background: rgba(15,23,42,.86);
+      transition: padding .2s ease;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    aside.right { border-right: 0; border-left: 1px solid var(--border); }
+    .panel-toggle {
+      width: 100%;
+      margin: 0 0 .75rem;
+      flex: 0 0 auto;
+      position: relative;
+      z-index: 9;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.07);
+      color: var(--text);
+      box-shadow: 0 8px 18px rgba(0,0,0,.18);
+    }
+    .panel-toggle:hover { background: rgba(255,255,255,.11); }
+    .app.left-collapsed aside.left-panel,
+    .app.right-collapsed aside.right-panel { padding: .55rem .35rem; overflow: hidden; }
+    .panel-content {
+      min-height: 0;
+      overflow: auto;
+      padding-right: .1rem;
+    }
+    .app.left-collapsed aside.left-panel .panel-content,
+    .app.right-collapsed aside.right-panel .panel-content { display: none; }
+    .app.left-collapsed #toggleLeftPanel,
+    .app.right-collapsed #toggleRightPanel {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      min-height: 150px;
+      padding: .55rem .25rem;
+      border-radius: 14px;
+      white-space: nowrap;
+    }
+    .section {
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: .9rem;
+      margin-bottom: .9rem;
+      box-shadow: 0 1px 0 rgba(255,255,255,.03) inset;
+    }
+    .section h2 {
+      margin: 0 0 .7rem;
+      font-size: .82rem;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: #cbd5e1;
+    }
+    .hint { color: var(--muted); font-size: .8rem; line-height: 1.35; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+    .stack { display: flex; flex-direction: column; gap: .55rem; }
+    .inline { display: flex; gap: .5rem; align-items: center; }
+    .pill {
+      display: inline-flex; align-items: center; gap: .35rem;
+      border: 1px solid var(--border); border-radius: 999px;
+      padding: .25rem .5rem; color: var(--muted); font-size: .75rem;
+      margin: .1rem .15rem .1rem 0;
+      background: rgba(255,255,255,.04);
+    }
+    .list { display: flex; flex-direction: column; gap: .45rem; }
+    .list-item {
+      padding: .6rem;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .list-item.active { outline: 2px solid var(--accent); background: rgba(56,189,248,.1); }
+    .list-item strong { display: block; font-size: .86rem; }
+    .list-item span { color: var(--muted); font-size: .74rem; }
+
+    main {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 48px 1fr;
+      background: radial-gradient(circle at top left, rgba(56,189,248,.14), transparent 28%), #0b1120;
+    }
+    .pages-bar {
+      display: flex; gap: .45rem; align-items: center;
+      padding: .45rem .65rem;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      background: rgba(2,6,23,.45);
+    }
+    .tab {
+      white-space: nowrap;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      padding: .45rem .65rem;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .tab.active { color: #07111f; background: linear-gradient(135deg, var(--accent), var(--accent-2)); font-weight: 800; }
+    .canvas-shell { overflow: auto; padding: 1.4rem; min-height: 0; }
+    .canvas {
+      position: relative;
+      width: 1280px;
+      min-height: 780px;
+      margin: 0 auto;
+      background-color: var(--canvas-bg);
+      background-image: linear-gradient(var(--canvas-grid) 1px, transparent 1px), linear-gradient(90deg, var(--canvas-grid) 1px, transparent 1px);
+      background-size: 24px 24px;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      color: #0f172a;
+      overflow: hidden;
+    }
+    .canvas-title {
+      position: absolute; top: 18px; left: 24px; right: 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      z-index: 1;
+    }
+    .canvas-title input {
+      color: #0f172a; background: transparent; border: 0; font-size: 1.6rem; font-weight: 900; padding: .25rem 0;
+    }
+    .widget {
+      position: absolute;
+      background: var(--card);
+      border: 1px solid rgba(15,23,42,.13);
+      border-radius: 16px;
+      box-shadow: 0 8px 25px rgba(15,23,42,.12);
+      overflow: hidden;
+      resize: both;
+      min-width: 260px;
+      min-height: 170px;
+    }
+    .widget.active { outline: 3px solid var(--accent); }
+    .widget-head {
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem;
+      padding: 0 .65rem;
+      background: rgba(15,23,42,.04);
+      cursor: move;
+      user-select: none;
+      border-bottom: 1px solid rgba(15,23,42,.08);
+    }
+    .widget-head strong { font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .widget-body { height: calc(100% - 38px); padding: .65rem; overflow: auto; }
+    .widget-body canvas { width: 100% !important; height: 100% !important; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+    .data-table th, .data-table td { border: 1px solid #e2e8f0; padding: .35rem .45rem; text-align: left; white-space: nowrap; }
+    .data-table th { background: #f1f5f9; position: sticky; top: 0; z-index: 1; }
+    .field-box {
+      max-height: 150px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: .45rem;
+      background: rgba(255,255,255,.04);
+    }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .65rem; }
+    .summary-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: .7rem; background: #fff; }
+    .summary-card strong { display:block; font-size: .82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .summary-card span { display:block; font-size:.72rem; color:#64748b; margin-top:.25rem; }
+    .summary-card b { font-size:1.25rem; }
+    .field-type { color:#cbd5e1; opacity:.85; font-size:.68rem; }
+    .autosave-status {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      font-size:.72rem;
+      color: var(--muted);
+      padding: .25rem .55rem .25rem .45rem;
+      border-radius: 999px;
+      white-space: nowrap;
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(15,23,42,.16);
+    }
+    .autosave-led {
+      width: 10px;
+      height: 10px;
+      flex: 0 0 10px;
+      border-radius: 999px;
+      background: #111827;
+      border: 1px solid rgba(148,163,184,.45);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.75), 0 0 0 2px rgba(15,23,42,.22);
+      transition: background .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .autosave-status[data-mode="saving"],
+    .autosave-status[data-mode="dirty"] { color: #cbd5e1; background: rgba(15,23,42,.28); }
+    .autosave-status[data-mode="saving"] .autosave-led,
+    .autosave-status[data-mode="dirty"] .autosave-led,
+    .autosave-status[data-mode="normal"] .autosave-led {
+      background: #020617;
+      border-color: rgba(148,163,184,.35);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.9), 0 0 0 2px rgba(15,23,42,.35);
+    }
+    .autosave-status[data-mode="saved"] { color: #86efac; background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.28); }
+    .autosave-status[data-mode="saved"] .autosave-led {
+      background: #22c55e;
+      border-color: #bbf7d0;
+      box-shadow: 0 0 6px rgba(34,197,94,.95), 0 0 14px rgba(34,197,94,.55), inset 0 0 2px rgba(255,255,255,.8);
+    }
+    .autosave-status[data-mode="error"] { color: #fecaca; background: rgba(239,68,68,.16); border-color: rgba(239,68,68,.34); }
+    .autosave-status[data-mode="error"] .autosave-led {
+      background: #ef4444;
+      border-color: #fecaca;
+      box-shadow: 0 0 6px rgba(239,68,68,.9), 0 0 14px rgba(239,68,68,.45), inset 0 0 2px rgba(255,255,255,.75);
+    }
+    .filter-chip {
+      display: flex; align-items: center; justify-content: space-between; gap: .45rem;
+      border: 1px solid var(--border); border-radius: 12px; padding: .45rem .55rem;
+      background: rgba(56,189,248,.08); color: #dbeafe; font-size: .76rem; margin-top: .4rem;
+    }
+    .filter-chip button { padding: .2rem .38rem; font-size: .72rem; border-radius: 8px; }
+    .filter-note { font-size: .72rem; color: var(--muted); margin-top: .45rem; line-height: 1.3; }
+    .filter-banner {
+      position: absolute; top: 58px; right: 24px; left: 24px; z-index: 2;
+      display: flex; flex-wrap: wrap; gap: .35rem; pointer-events: none;
+    }
+    .filter-banner span { pointer-events: auto; background: rgba(15,23,42,.86); color:#e0f2fe; border-radius:999px; padding:.25rem .55rem; font-size:.72rem; }
+    .diagnostic-good { color: var(--ok); }
+    .diagnostic-warn { color: #fbbf24; }
+    .relationship-actions { display:flex; gap:.35rem; margin-top:.45rem; }
+    .relationship-actions button { padding:.35rem .5rem; font-size:.75rem; }
+    .toast {
+      position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+      background: #020617; color: var(--text); border: 1px solid var(--border);
+      border-radius: 999px; padding: .7rem 1rem; box-shadow: var(--shadow); display: none; z-index: 100;
+    }
+    .empty {
+      height: 100%; display: grid; place-items: center; text-align: center; color: #475569; padding: 4rem;
+    }
+    .empty h2 { color: #0f172a; margin-bottom: .25rem; }
+
+    .workflow-tabs, .inspector-tabs {
+      position: sticky;
+      top: 0;
+      z-index: 7;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .35rem;
+      padding: .38rem;
+      margin: 0 0 .75rem;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--panel) 94%, transparent);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 18px rgba(0,0,0,.16);
+    }
+    .workflow-tabs button, .inspector-tabs button {
+      flex: 1 1 86px;
+      min-width: 74px;
+      padding: .42rem .48rem;
+      border-radius: 12px;
+      font-size: .78rem;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .workflow-tabs button.active, .inspector-tabs button.active {
+      color: #07111f;
+      font-weight: 850;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 6px 16px rgba(0,0,0,.16);
+    }
+    .section.hidden-by-tab { display: none; }
+    .section h2 small {
+      display:block;
+      margin-top:.25rem;
+      font-size:.68rem;
+      letter-spacing:0;
+      text-transform:none;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .widget { touch-action: none; }
+    .widget-head::before {
+      content: '↕';
+      color: rgba(15,23,42,.45);
+      font-weight: 900;
+      margin-right: .15rem;
+    }
+    .widget.dragging {
+      opacity: .92;
+      outline: 3px solid var(--accent);
+      cursor: grabbing;
+      box-shadow: 0 18px 45px rgba(15,23,42,.24);
+    }
+    .widget-head { cursor: grab; }
+    .widget.dragging .widget-head { cursor: grabbing; }
+    .inspector-note {
+      margin:.55rem 0 0;
+      color: var(--muted);
+      font-size:.74rem;
+      line-height:1.3;
+    }
+    .quick-actions {
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:.5rem;
+      margin-top:.55rem;
+    }
+    .widget-context-menu {
+      position: fixed;
+      z-index: 1000;
+      min-width: 190px;
+      padding: .35rem;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--panel) 96%, black 4%);
+      box-shadow: 0 18px 50px rgba(0,0,0,.38);
+      display: none;
+    }
+    .widget-context-menu button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      margin: .1rem 0;
+      background: transparent;
+      color: var(--text);
+      border-radius: 10px;
+    }
+    .widget-context-menu button:hover { background: rgba(255,255,255,.08); }
+    .widget-context-menu button.danger { color: #fecdd3; background: rgba(251,113,133,.08); }
+
+    @supports not (background: color-mix(in srgb, red, blue)) {
+      .workflow-tabs, .inspector-tabs { background: rgba(15,23,42,.92); }
+    }
+
+    @media (max-width: 1050px) {
+      body { overflow: auto; }
+      .app, .app.left-collapsed, .app.right-collapsed { grid-template-columns: 1fr; grid-template-rows: auto auto auto auto; }
+      aside, aside.right { border: 0; border-bottom: 1px solid var(--border); max-height: none; }
+      .app.left-collapsed aside.left-panel .panel-content,
+      .app.right-collapsed aside.right-panel .panel-content { display: block; }
+      .app.left-collapsed #toggleLeftPanel,
+      .app.right-collapsed #toggleRightPanel { writing-mode: horizontal-tb; min-height: auto; }
+      main { min-height: 720px; }
+      header { position: sticky; top: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>DataBench <span class="version">v1.4.1</span></h1>
+          <p>Quick and dirty data visualization, analysis, themes, pivot tables, PDF/PPT exports, templates, calculated fields, relationships, filters, autosave, and JSON projects.</p>
+        </div>
+      </div>
+      <div class="toolbar">
+        <span id="autosaveStatus" class="autosave-status" data-mode="normal" title="Autosave status"><span class="autosave-led" aria-hidden="true"></span><span id="autosaveStatusText">Autosave ready</span></span>
+        <div class="tool-group" title="Project">
+          <button id="newProjectBtn">New</button>
+          <button id="restoreAutosaveBtn">Restore</button>
+          <button id="saveJsonBtn" class="primary">Save JSON</button>
+          <label class="small" style="margin:0; width:auto; color:var(--text); cursor:pointer;">
+            <input id="loadJsonInput" type="file" accept="application/json,.json" hidden> Load
+          </label>
+        </div>
+        <div class="tool-group" title="History">
+          <button id="undoBtn">Undo</button>
+          <button id="redoBtn">Redo</button>
+        </div>
+        <div class="tool-group" title="Export">
+          <button id="exportHtmlBtn">HTML</button>
+          <button id="exportPngBtn">PNG</button>
+          <button id="exportPdfBtn">PDF</button>
+          <button id="exportPptBtn">PPTX</button>
+          <button id="exportMobileViewerBtn">Mobile Viewer</button>
+          <a id="openViewerAppBtn" class="button ghost" href="./viewer/" target="_blank" rel="noopener" title="Open the deployed DataBench Viewer app">Open Viewer</a>
+        </div>
+      </div>    </header>
+
+    <aside id="leftPanel" class="left-panel">
+      <button id="toggleLeftPanel" class="panel-toggle" type="button" aria-expanded="true" title="Collapse left menu">◀ Collapse left menu</button>
+      <div class="panel-content">
+      <div class="section">
+        <h2>Data Sources</h2>
+        <label>Upload CSV or XLSX</label>
+        <input id="fileInput" type="file" accept=".csv,.xlsx,.xls" multiple>
+        <label>Google Sheets published CSV URL</label>
+        <input id="sheetUrl" placeholder="Paste published CSV link">
+        <button id="loadSheetBtn" style="margin-top:.55rem; width:100%;">Grab Sheet CSV</button>
+        <button id="sampleDataBtn" class="primary" style="margin-top:.55rem; width:100%;">Load Sample Project</button>
+        <p class="hint">For Google Sheets, use File → Share → Publish to web → CSV, then paste that CSV link here.</p>
+        <div id="sourceList" class="list"></div>
+      </div>
+
+      <div class="section">
+        <h2>Templates</h2>
+        <label>Dashboard template</label>
+        <select id="templateSelect">
+          <option value="sales">Sales dashboard</option>
+          <option value="survey">Survey results</option>
+          <option value="inventory">Inventory tracker</option>
+          <option value="repair">Repair clinic metrics</option>
+        </select>
+        <button id="applyTemplateBtn" class="primary" style="margin-top:.55rem; width:100%;">Apply Template to Current Data</button>
+        <p class="hint">Templates create starter pages using detected dimensions and measures. They work best after loading a dataset.</p>
+      </div>
+
+      <div class="section">
+        <h2>Calculated Fields</h2>
+        <label>Data source</label><select id="calcSource"></select>
+        <label>New field name</label><input id="calcName" placeholder="Profit, MarginPct, Year">
+        <label>Formula</label><textarea id="calcFormula" placeholder="Revenue - Cost"></textarea>
+        <button id="addCalcFieldBtn" class="primary" style="margin-top:.55rem; width:100%;">Add Calculated Field</button>
+        <div id="calcFieldList" class="list"></div>
+        <p class="hint">Formula examples: <code>Revenue - Cost</code>, <code>[Order Date]</code> for fields with spaces, <code>year(Date)</code>, <code>upper(Category)</code>, <code>ifelse(Units &gt; 5, 'Large', 'Small')</code>.</p>
+      </div>
+
+      <div class="section">
+        <h2>Data Model</h2>
+        <div class="row">
+          <div><label>Primary table</label><select id="joinLeft"></select></div>
+          <div><label>Lookup table</label><select id="joinRight"></select></div>
+        </div>
+        <label>Matching key field</label>
+        <select id="joinKey"></select>
+        <div class="row">
+          <div><label>Join type</label><select id="joinType"><option value="left">Left join</option><option value="inner">Inner join</option></select></div>
+          <div><label>Output name</label><input id="joinOutputName" placeholder="Auto-name joined table"></div>
+        </div>
+        <button id="saveRelationshipBtn" style="margin-top:.55rem; width:100%;">Save Relationship</button>
+        <button id="createJoinBtn" class="primary" style="margin-top:.55rem; width:100%;">Create Joined Table</button>
+        <div id="joinDiagnostics" class="hint"></div>
+        <div id="relationshipList" class="list"></div>
+        <p class="hint">The relationship model can materialize left or inner joined tables when you need one flat dataset for charts.</p>
+      </div>
+
+      <div class="section">
+        <h2>Pages & Widgets</h2>
+        <button id="addPageBtn" class="primary" style="width:100%;">Add Blank Page</button>
+        <div class="row" style="margin-top:.55rem;">
+          <button id="addTableBtn">Add Table</button>
+          <button id="addChartBtn">Add Chart</button>
+        </div>
+        <div class="row" style="margin-top:.55rem;">
+          <button id="addSummaryBtn">Add Summary</button>
+          <button id="addPivotBtn">Add Pivot</button>
+        </div>
+        <div class="row" style="margin-top:.55rem;">
+          <button id="restoreAutosaveBtn2">Restore Autosave</button>
+          <button id="exportDataBtn">Export CSV</button>
+        </div>
+        <div class="row" style="margin-top:.55rem;">
+          <button id="duplicateWidgetBtn">Duplicate</button>
+          <button id="deleteWidgetBtn" class="danger">Delete</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Theme Studio</h2>
+        <label>Theme preset</label>
+        <select id="themePresetSelect">
+          <option value="light">Light Professional</option>
+          <option value="dark">Dark Professional</option>
+          <option value="slate">Slate Minimal</option>
+          <option value="forest">Forest Workshop</option>
+          <option value="ocean">Ocean Lab</option>
+          <option value="candy">Candy Pop</option>
+          <option value="retro">Retro Arcade</option>
+          <option value="maker">Maker Neon</option>
+          <option value="custom">Custom</option>
+        </select>
+        <button id="applyThemePresetBtn" class="primary" style="margin-top:.55rem; width:100%;">Apply Theme Preset</button>
+        <p class="hint">Presets range from professional to fun. After applying one, tweak every major UI and canvas color below.</p>
+        <div class="row">
+          <div><label>Accent</label><input id="accentColor" type="color" value="#38bdf8"></div>
+          <div><label>Accent 2</label><input id="accent2Color" type="color" value="#a78bfa"></div>
+        </div>
+        <div class="row">
+          <div><label>App BG</label><input id="bgColor" type="color" value="#0f172a"></div>
+          <div><label>Panel</label><input id="panelColor" type="color" value="#111827"></div>
+        </div>
+        <div class="row">
+          <div><label>Text</label><input id="textColor" type="color" value="#e5e7eb"></div>
+          <div><label>Muted Text</label><input id="mutedColor" type="color" value="#94a3b8"></div>
+        </div>
+        <div class="row">
+          <div><label>Canvas</label><input id="canvasColor" type="color" value="#f8fafc"></div>
+          <div><label>Cards</label><input id="cardColor" type="color" value="#ffffff"></div>
+        </div>
+        <div class="row">
+          <div><label>Canvas Grid</label><input id="canvasGridColor" type="color" value="#e2e8f0"></div>
+          <div><label>Panel 2</label><input id="panel2Color" type="color" value="#1f2937"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Page Filters</h2>
+        <label>Data source</label><select id="pageFilterSource"></select>
+        <label>Field</label><select id="pageFilterField"></select>
+        <label>Operator</label><select id="pageFilterOp"><option value="equals">equals</option><option value="notEquals">does not equal</option><option value="contains">contains</option><option value="gt">greater than</option><option value="gte">greater than or equal</option><option value="lt">less than</option><option value="lte">less than or equal</option><option value="between">between</option><option value="before">before date</option><option value="after">after date</option></select>
+        <div class="row">
+          <div><label>Value</label><input id="pageFilterValue" placeholder="Filter value"></div>
+          <div><label>Value 2</label><input id="pageFilterValue2" placeholder="For between"></div>
+        </div>
+        <div class="row" style="margin-top:.55rem;">
+          <button id="addPageFilterBtn" class="primary">Add Filter</button>
+          <button id="clearPageFiltersBtn">Clear Page</button>
+        </div>
+        <div id="pageFilterList"></div>
+        <p class="filter-note">Charts can also add a page filter when you click a bar, slice, or point label.</p>
+      </div>
+      </div>
+    </aside>
+
+    <main>
+      <div id="pagesBar" class="pages-bar"></div>
+      <div class="canvas-shell">
+        <div id="canvas" class="canvas">
+          <div class="empty"><div><h2>Upload a data file to begin.</h2><p>Default pages will be generated with a table for each uploaded file.</p></div></div>
+        </div>
+      </div>
+    </main>
+
+    <aside id="rightPanel" class="right right-panel">
+      <button id="toggleRightPanel" class="panel-toggle" type="button" aria-expanded="true" title="Collapse right menu">Collapse right menu ▶</button>
+      <div class="panel-content">
+      <div class="section">
+        <h2>Selected Widget</h2>
+        <div id="inspectorEmpty" class="hint">Select a widget on the canvas to configure it.</div>
+        <div id="inspector" style="display:none;">
+          <label>Title</label><input id="wTitle">
+          <div class="row">
+            <div><label>X</label><input id="wX" type="number"></div>
+            <div><label>Y</label><input id="wY" type="number"></div>
+          </div>
+          <div class="row">
+            <div><label>Width</label><input id="wW" type="number"></div>
+            <div><label>Height</label><input id="wH" type="number"></div>
+          </div>
+          <label>Data source</label><select id="wSource"></select>
+          <label>Widget type</label><select id="wType"><option value="table">Table</option><option value="bar">Bar chart</option><option value="horizontalBar">Horizontal bar</option><option value="line">Line chart</option><option value="pie">Pie chart</option><option value="donut">Donut chart</option><option value="scatter">Scatter plot</option><option value="kpi">KPI card</option><option value="pivot">Pivot table</option><option value="summary">Data summary</option></select>
+          <div id="chartOptions">
+            <label>Dimension / Pivot rows</label><select id="wDimension"></select>
+            <label>Pivot columns</label><select id="wPivotColumn"></select>
+            <label>Measure column</label><select id="wMeasureCol"></select>
+            <label>Function</label><select id="wAgg"><option>sum</option><option>average</option><option>median</option><option>min</option><option>max</option><option>range</option><option>count</option><option>countif</option><option>count distinct</option><option>first</option><option>last</option><option>percent of total</option></select>
+            <label>CountIf value</label><input id="wCountIf" placeholder="Only used by countif">
+            <div class="row">
+              <div><label>Sort by</label><select id="wSortBy"><option value="none">None</option><option value="dimension">Dimension</option><option value="measure">Measure</option></select></div>
+              <div><label>Direction</label><select id="wSortDir"><option value="desc">Descending</option><option value="asc">Ascending</option></select></div>
+            </div>
+            <label>Top N groups</label><input id="wTopN" type="number" min="0" placeholder="0 = show up to 60">
+          </div>
+          <label>Chart / card colors</label>
+          <input id="wColors" placeholder="#38bdf8,#a78bfa,#34d399,#f59e0b">
+          <div class="row">
+            <div><label>Background</label><input id="wBg" type="color" value="#ffffff"></div>
+            <div><label>Text</label><input id="wText" type="color" value="#0f172a"></div>
+          </div>
+          <hr style="border:0;border-top:1px solid var(--border);margin:1rem 0 .4rem;">
+          <h2 style="margin-top:.2rem;">Widget Filters</h2>
+          <label>Field</label><select id="widgetFilterField"></select>
+          <label>Operator</label><select id="widgetFilterOp"><option value="equals">equals</option><option value="notEquals">does not equal</option><option value="contains">contains</option><option value="gt">greater than</option><option value="gte">greater than or equal</option><option value="lt">less than</option><option value="lte">less than or equal</option><option value="between">between</option><option value="before">before date</option><option value="after">after date</option></select>
+          <div class="row">
+            <div><label>Value</label><input id="widgetFilterValue" placeholder="Filter value"></div>
+            <div><label>Value 2</label><input id="widgetFilterValue2" placeholder="For between"></div>
+          </div>
+          <div class="row" style="margin-top:.55rem;">
+            <button id="addWidgetFilterBtn">Add Filter</button>
+            <button id="clearWidgetFiltersBtn">Clear Widget</button>
+          </div>
+          <div id="widgetFilterList"></div>
+          <p class="inspector-note">Changes auto-apply. Use the position/size boxes for precise placement, or drag a widget by its header.</p><button id="applyWidgetBtn" class="primary" style="margin-top:.8rem; width:100%;">Refresh Widget</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Fields</h2>
+        <div id="fieldList" class="field-box hint">No data loaded yet.</div>
+      </div>
+
+      <div class="section">
+        <h2>Function Library</h2>
+        <span class="pill">sum</span><span class="pill">average</span><span class="pill">median</span><span class="pill">min</span><span class="pill">max</span><span class="pill">range</span><span class="pill">count</span><span class="pill">countif</span><span class="pill">count distinct</span><span class="pill">first</span><span class="pill">last</span><span class="pill">percent of total</span>
+        <p class="hint">Dimensions group rows. Measures calculate numeric or count-based values for each group.</p>
+      </div>
+      </div>
+    </aside>
+  </div>
+  <div id="widgetContextMenu" class="widget-context-menu" role="menu" aria-hidden="true"></div>
+  <div id="toast" class="toast"></div>
+  <template id="databenchViewerTemplate">
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DataBench Viewer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    :root{--bg:#0f172a;--panel:#111827;--panel2:#1f2937;--text:#e5e7eb;--muted:#94a3b8;--accent:#38bdf8;--accent2:#a78bfa;--ok:#34d399;--danger:#fb7185;--border:rgba(255,255,255,.14);--canvas:#f8fafc;--card:#fff;--cardText:#0f172a;--grid:#e2e8f0;--shadow:0 16px 40px rgba(0,0,0,.24);--radius:18px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font,Inter,system-ui,sans-serif);min-height:100vh} button,input,select{font:inherit} a.button{box-sizing:border-box;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:.62rem .9rem;background:var(--panel2);color:var(--text);cursor:pointer} button{border:0;border-radius:999px;padding:.62rem .9rem;background:var(--panel2);color:var(--text);cursor:pointer} button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#07111f;font-weight:800} button.ghost,a.button.ghost{background:transparent;border:1px solid var(--border)} input,select{width:100%;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:12px;color:var(--text);padding:.65rem .75rem} label{display:block;font-size:.78rem;color:var(--muted);margin:.6rem 0 .25rem}.hidden{display:none!important}
+    header{position:sticky;top:0;z-index:10;background:rgba(2,6,23,.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:.8rem clamp(.8rem,2vw,1.3rem);display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:.75rem}.logo{width:38px;height:38px;border-radius:12px;background:conic-gradient(from 220deg,var(--accent),var(--accent2),var(--ok),var(--accent));box-shadow:0 0 0 4px rgba(255,255,255,.05)} h1{margin:0;font-size:1.05rem}.brand p{margin:.05rem 0 0;color:var(--muted);font-size:.82rem}.actions{display:flex;gap:.45rem;align-items:center;flex-wrap:wrap}.viewer-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;padding:1rem;max-width:1440px;margin:0 auto}.open-screen{max-width:720px;margin:8vh auto;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:24px;padding:1.2rem;box-shadow:var(--shadow)}.open-screen h2{margin-top:0}.hint{color:var(--muted);font-size:.9rem;line-height:1.45}.nav-row{display:flex;gap:.5rem;align-items:center;justify-content:space-between;flex-wrap:wrap;background:rgba(255,255,255,.045);border:1px solid var(--border);border-radius:20px;padding:.65rem}.page-tabs{display:flex;gap:.4rem;flex-wrap:wrap}.page-tabs button.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#07111f;font-weight:800}.filter-panel{background:rgba(255,255,255,.045);border:1px solid var(--border);border-radius:20px;padding:.8rem}.filter-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:.55rem;align-items:end}.chips{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.55rem}.chip{display:inline-flex;align-items:center;gap:.35rem;border:1px solid var(--border);border-radius:999px;padding:.35rem .45rem .35rem .65rem;background:rgba(255,255,255,.06);font-size:.82rem}.chip button{padding:.12rem .38rem;background:rgba(255,255,255,.12)}.canvas-wrap{overflow:auto;border-radius:24px}.canvas{position:relative;width:1200px;min-height:850px;margin:0 auto;background:var(--canvas);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;border-radius:24px;box-shadow:var(--shadow);padding:0}.widget{position:absolute;border:1px solid rgba(15,23,42,.15);border-radius:16px;background:var(--card);color:var(--cardText);box-shadow:0 12px 30px rgba(15,23,42,.12);overflow:hidden}.widget-head{height:45px;display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:0 .8rem;border-bottom:1px solid rgba(15,23,42,.12);font-weight:850}.widget-head button{font-size:.74rem;padding:.3rem .52rem;background:rgba(15,23,42,.07);color:inherit}.widget-body{height:calc(100% - 45px);padding:.8rem;overflow:auto}.data-table{border-collapse:collapse;width:100%;font-size:12px}.data-table th,.data-table td{border:1px solid #d7dee8;padding:6px;text-align:left;white-space:nowrap}.data-table th{background:#f1f5f9}.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.7rem}.summary-card{border:1px solid #dbe3ee;border-radius:13px;background:rgba(255,255,255,.8);padding:.75rem}.summary-card span{display:block;color:#64748b;font-size:.82rem;margin-top:.25rem}.kpi{height:100%;display:grid;place-items:center;text-align:center}.kpi b{display:block;font-size:clamp(2.1rem,8vw,4rem);line-height:1}.kpi span{opacity:.68}.modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(2,6,23,.72);padding:1rem}.modal-card{width:min(1080px,96vw);height:min(760px,90vh);background:var(--card);color:var(--cardText);border-radius:22px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}.modal-card .widget-head{height:52px}.modal-body{flex:1;padding:1rem;overflow:auto}.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#020617;color:#fff;border:1px solid var(--border);border-radius:999px;padding:.7rem 1rem;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1}.mobile-layout{display:none}
+    @media (max-width: 760px){header{align-items:flex-start}.brand p{display:none}.actions{width:100%}.actions button,.actions label,.actions a.button{flex:1;text-align:center}.viewer-shell{padding:.7rem}.filter-grid{grid-template-columns:1fr}.desktop-layout{display:none}.mobile-layout{display:block}.canvas-wrap{overflow:visible}.canvas{width:100%;min-height:0;background:transparent;box-shadow:none;border-radius:0}.widget{position:relative!important;left:auto!important;top:auto!important;width:100%!important;height:auto!important;min-height:260px;margin:0 0 .8rem;border-radius:18px}.widget.kpi-widget{min-height:160px}.widget.table-widget,.widget.pivot-widget,.widget.summary-widget{min-height:220px}.widget-body{height:auto;min-height:215px}.widget.kpi-widget .widget-body{min-height:115px}.data-table{font-size:11px}.page-tabs{display:none}.page-select-wrap{display:block!important}.nav-row{align-items:stretch}.nav-row>*{width:100%}}
+    @media (min-width: 761px){.page-select-wrap{display:none!important}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo"></div><div><h1 id="projectTitle">DataBench Viewer</h1><p>Mobile-friendly dashboard viewer</p></div></div>
+  <div class="actions"><a class="button ghost" href="../" title="Back to DataBench Editor">Editor</a><label class="ghost" style="margin:0;cursor:pointer;width:auto"><input id="projectFile" type="file" accept="application/json,.json,.databench.json" hidden> Open Project</label><button id="resetFiltersBtn" class="ghost">Reset Filters</button></div>
+</header>
+<div id="openScreen" class="open-screen"><h2>Open a DataBench project</h2><p class="hint">Open a <code>.databench.json</code> project exported from DataBench, or use the editor’s <strong>Export Mobile Viewer</strong> option to create a standalone file that opens directly on phones and tablets.</p><label>Project JSON</label><input id="projectFileBig" type="file" accept="application/json,.json,.databench.json"><p class="hint">Projects are read locally in your browser. Nothing is uploaded. On a hosted site, the viewer can also load a project with <code>?project=../path/to/project.databench.json</code>.</p></div>
+<div id="app" class="viewer-shell hidden">
+  <div class="nav-row"><div class="page-tabs" id="pageTabs"></div><div class="page-select-wrap hidden"><label style="margin-top:0">Page</label><select id="pageSelect"></select></div><div class="hint" id="metaLine"></div></div>
+  <div class="filter-panel"><div class="filter-grid"><div><label>Data source</label><select id="filterSource"></select></div><div><label>Field</label><select id="filterField"></select></div><div><label>Value</label><input id="filterValue" placeholder="Exact value"></div><button id="addFilterBtn" class="primary">Add Filter</button></div><div id="filterChips" class="chips"></div></div>
+  <div class="canvas-wrap"><div id="canvas" class="canvas"></div></div>
+</div>
+<div id="modal" class="modal hidden"><div class="modal-card"><div class="widget-head"><strong id="modalTitle">Widget</strong><button id="closeModal">Close</button></div><div id="modalBody" class="modal-body"></div></div></div>
+<div id="toast" class="toast"></div>
+<script>
+window.DATABENCH_EMBEDDED_B64 = "__DATABENCH_PROJECT_B64__";
+let project=null, activePageId=null, charts=new Map();
+const $=id=>document.getElementById(id);
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function decodeB64Unicode(b64){return decodeURIComponent(Array.prototype.map.call(atob(b64),c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''))}
+function numberish(v){if(typeof v==='number')return v;const s=String(v??'').trim();if(!s)return NaN;return Number(s.replace(/[$,%]/g,'').replace(/,/g,''))}
+function formatNumber(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:2})}
+function formatMaybeNumber(v){return typeof v==='number'&&Number.isFinite(v)?formatNumber(v):String(v??'')}
+function rowsOf(id){return project?.sources?.find(s=>s.id===id)?.rows||[]}
+function colsOf(id){return project?.sources?.find(s=>s.id===id)?.columns||Object.keys(rowsOf(id)[0]||{})}
+function sourceName(id){return project?.sources?.find(s=>s.id===id)?.name||'Source'}
+function activePage(){return project?.pages?.find(p=>p.id===activePageId)||project?.pages?.[0]}
+function applyTheme(){const t=project?.theme||{};const r=document.documentElement;r.style.setProperty('--bg',t.bg||'#0f172a');r.style.setProperty('--panel',t.panel||'#111827');r.style.setProperty('--panel2',t.panel2||'#1f2937');r.style.setProperty('--text',t.text||'#e5e7eb');r.style.setProperty('--muted',t.muted||'#94a3b8');r.style.setProperty('--accent',t.accent||'#38bdf8');r.style.setProperty('--accent2',t.accent2||'#a78bfa');r.style.setProperty('--border',t.border||'rgba(255,255,255,.14)');r.style.setProperty('--canvas',t.canvas||'#f8fafc');r.style.setProperty('--card',t.card||'#fff');r.style.setProperty('--grid',t.canvasGrid||'#e2e8f0')}
+function loadProject(p){project=p;project.pages=project.pages||[];project.sources=project.sources||[];activePageId=project.pages[0]?.id||null;project.pages.forEach(pg=>pg.filters=pg.filters||[]);applyTheme();$('projectTitle').textContent=project.projectName||'DataBench Viewer';$('openScreen').classList.add('hidden');$('app').classList.remove('hidden');renderAll();toast('Project loaded')}
+async function readFile(file){const text=await file.text();loadProject(JSON.parse(text))}
+function renderAll(){for(const c of charts.values())c.destroy();charts.clear();renderNav();renderFilters();renderCanvas()}
+function renderNav(){const pages=project.pages||[];$('pageTabs').innerHTML=pages.map(p=>`<button class="${p.id===activePageId?'active':''}" data-page="${p.id}">${escapeHtml(p.title)}</button>`).join('');$('pageSelect').innerHTML=pages.map(p=>`<option value="${p.id}">${escapeHtml(p.title)}</option>`).join('');$('pageSelect').value=activePageId||'';$('metaLine').textContent=`${pages.length} page${pages.length===1?'':'s'} · ${project.sources?.length||0} source${(project.sources?.length||0)===1?'':'s'}`}
+function renderFilters(){const srcs=project.sources||[];const current=$('filterSource').value||srcs[0]?.id||'';$('filterSource').innerHTML=srcs.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');if(current)$('filterSource').value=current;const cols=colsOf($('filterSource').value);$('filterField').innerHTML=cols.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');const filters=activePage()?.filters||[];$('filterChips').innerHTML=filters.length?filters.map(f=>`<span class="chip">${escapeHtml(sourceName(f.sourceId))} · ${escapeHtml(f.field)} = ${escapeHtml(f.value)} <button data-remove-filter="${f.id}">×</button></span>`).join(''):'<span class="hint">No active page filters. Tap a chart item or add a value filter.</span>'}
+function renderCanvas(){const page=activePage();const canvas=$('canvas');if(!page){canvas.innerHTML='<div class="hint">No pages in project.</div>';return}canvas.innerHTML='';const widgets=[...(page.widgets||[])].sort((a,b)=>(a.y-b.y)||(a.x-b.x));widgets.forEach(w=>canvas.appendChild(renderWidget(w)));widgets.forEach(w=>renderWidgetBody(w))}
+function renderWidget(w){const el=document.createElement('section');el.className=`widget ${w.type}-widget`;el.dataset.widget=w.id;el.style.left=(w.x||0)+'px';el.style.top=(w.y||0)+'px';el.style.width=(w.w||420)+'px';el.style.height=(w.h||300)+'px';el.style.background=w.bg||project.theme?.card||'#fff';el.style.color=w.text||'#0f172a';el.innerHTML=`<div class="widget-head"><strong>${escapeHtml(w.title||'Widget')}</strong><button data-fullscreen="${w.id}">Full screen</button></div><div class="widget-body" id="body_${w.id}"></div>`;return el}
+function widgetRows(w){const pageFilters=(activePage()?.filters||[]).filter(f=>f.sourceId===w.sourceId);const widgetFilters=(w.filters||[]).map(f=>Object.assign({sourceId:w.sourceId},f));return applyFilters(rowsOf(w.sourceId),[...pageFilters,...widgetFilters])}
+function applyFilters(rows,filters){return rows.filter(row=>filters.every(f=>rowMatches(row,f)))}
+function rowMatches(row,f){const val=String(row[f.field]??'').trim();const target=String(f.value??'').trim();const target2=String(f.value2??'').trim();const n=numberish(row[f.field]),a=numberish(target),b=numberish(target2);const d=Date.parse(val),da=Date.parse(target),db=Date.parse(target2);switch(f.op||'equals'){case'notEquals':return val!==target;case'contains':return val.toLowerCase().includes(target.toLowerCase());case'gt':return Number.isFinite(n)&&Number.isFinite(a)&&n>a;case'gte':return Number.isFinite(n)&&Number.isFinite(a)&&n>=a;case'lt':return Number.isFinite(n)&&Number.isFinite(a)&&n<a;case'lte':return Number.isFinite(n)&&Number.isFinite(a)&&n<=a;case'between':return Number.isFinite(n)&&Number.isFinite(a)&&Number.isFinite(b)?n>=Math.min(a,b)&&n<=Math.max(a,b):Number.isFinite(d)&&Number.isFinite(da)&&Number.isFinite(db)&&d>=Math.min(da,db)&&d<=Math.max(da,db);case'before':return Number.isFinite(d)&&Number.isFinite(da)&&d<da;case'after':return Number.isFinite(d)&&Number.isFinite(da)&&d>da;default:return val===target}}
+function renderWidgetBody(w,targetId){const body=$(targetId||`body_${w.id}`);if(!body)return;const rows=widgetRows(w),base=rowsOf(w.sourceId);if(!base.length){body.innerHTML='<p>No data selected.</p>';return}if(w.type==='table')return renderTable(body,rows,colsOf(w.sourceId),base.length);if(w.type==='summary')return renderSummary(body,w,rows,base.length);if(w.type==='pivot')return renderPivot(body,w,rows,base.length);if(w.type==='kpi')return renderKpi(body,w,rows);return renderChart(body,w,rows)}
+function renderTable(el,rows,cols,total){const limitedRows=rows.slice(0,250),limitedCols=cols.slice(0,30);const note=total!==rows.length?`<p class="hint">${formatNumber(rows.length)} of ${formatNumber(total)} rows after filters.</p>`:'';el.innerHTML=`${note}<div style="overflow:auto"><table class="data-table"><thead><tr>${limitedCols.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${limitedRows.map(r=>`<tr>${limitedCols.map(c=>`<td>${escapeHtml(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${rows.length>250?'<p class="hint">Showing first 250 rows.</p>':''}`}
+function renderSummary(el,w,rows,total){const src=project.sources.find(s=>s.id===w.sourceId);const cols=colsOf(w.sourceId);let missing=0;rows.forEach(r=>cols.forEach(c=>{if(r[c]===''||r[c]==null)missing++}));const nums=cols.filter(c=>rows.some(r=>Number.isFinite(numberish(r[c]))));el.innerHTML=`<div class="summary-grid"><div class="summary-card"><strong>Rows shown</strong><span>${formatNumber(rows.length)}</span></div><div class="summary-card"><strong>Total rows</strong><span>${formatNumber(total)}</span></div><div class="summary-card"><strong>Columns</strong><span>${formatNumber(cols.length)}</span></div><div class="summary-card"><strong>Numeric fields</strong><span>${formatNumber(nums.length)}</span></div><div class="summary-card"><strong>Missing cells</strong><span>${formatNumber(missing)}</span></div></div><h3>Fields</h3><div class="summary-grid">${cols.map(c=>`<div class="summary-card"><strong>${escapeHtml(c)}</strong><span>${new Set(rows.map(r=>String(r[c]??''))).size} unique</span></div>`).join('')}</div>`}
+function renderPivot(el,w,rows,total){const rowField=w.dimension||colsOf(w.sourceId)[0],colField=w.pivotColumn||'',measure=w.measureCol||colsOf(w.sourceId)[0];const rowKeys=[...new Set(rows.map(r=>String(r[rowField]??'')))].sort().slice(0,60);const colKeys=colField?[...new Set(rows.map(r=>String(r[colField]??'')))].sort().slice(0,24):['Value'];const head=`<tr><th>${escapeHtml(rowField)}</th>${colKeys.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}<th>Total</th></tr>`;const body=rowKeys.map(rk=>{const rowSubset=rows.filter(r=>String(r[rowField]??'')===rk);const cells=colKeys.map(ck=>calcAgg(rowSubset.filter(r=>!colField||String(r[colField]??'')===ck),measure,w.agg,w.countIf));const totalVal=calcAgg(rowSubset,measure,w.agg,w.countIf);return`<tr><th>${escapeHtml(rk)}</th>${cells.map(v=>`<td>${escapeHtml(formatMaybeNumber(v))}</td>`).join('')}<td><strong>${escapeHtml(formatMaybeNumber(totalVal))}</strong></td></tr>`}).join('');el.innerHTML=`<div style="overflow:auto"><table class="data-table"><thead>${head}</thead><tbody>${body}</tbody></table></div><p class="hint">Pivot limits: 60 row groups and 24 column groups.</p>`}
+function renderKpi(el,w,rows){const data=aggregate(rows,Object.assign({},w,{dimension:'__all__'}));const value=data[0]?.value??0;el.innerHTML=`<div class="kpi"><div><b>${formatNumber(value)}</b><span>${escapeHtml(w.agg)} ${escapeHtml(w.measureCol||'')}</span></div></div>`}
+function chartType(type){if(type==='horizontalBar')return'bar';if(type==='donut')return'doughnut';return type==='scatter'?'scatter':type}
+function renderChart(el,w,rows){const id='chart_'+w.id+'_'+Math.random().toString(36).slice(2);el.innerHTML=`<canvas id="${id}"></canvas>`;const data=aggregate(rows,w);const colors=(w.colors?.length?w.colors:['#38bdf8','#a78bfa','#34d399','#f59e0b']).map(String);const cfg=w.type==='scatter'?{datasets:[{label:w.title,data:rows.map(r=>({x:numberish(r[w.dimension]),y:numberish(r[w.measureCol])})).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)),backgroundColor:colors[0],borderColor:colors[0]}]}:{labels:data.map(d=>d.key),datasets:[{label:`${w.agg} ${w.measureCol||''}`,data:data.map(d=>d.value),backgroundColor:data.map((_,i)=>colors[i%colors.length]),borderColor:colors[0]}]};const chart=new Chart($(id),{type:chartType(w.type),data:cfg,options:{responsive:true,maintainAspectRatio:false,onClick:(evt,elements)=>chartClick(elements,w,data),plugins:{legend:{display:['pie','donut'].includes(w.type)},tooltip:{callbacks:{footer:()=>w.dimension?'Tap to filter page':''}}},indexAxis:w.type==='horizontalBar'?'y':'x',scales:['pie','donut'].includes(w.type)?{}:{y:{beginAtZero:true}}}});charts.set(id,chart)}
+function chartClick(elements,w,data){if(!elements?.length||!w.dimension||w.dimension==='__all__'||w.type==='scatter')return;const label=data[elements[0].index]?.key;if(label==null)return;const page=activePage();page.filters=page.filters||[];const exists=page.filters.some(f=>f.sourceId===w.sourceId&&f.field===w.dimension&&String(f.value)===String(label));if(exists)return toast('Filter is already active');page.filters.push({id:'vf_'+Math.random().toString(36).slice(2),sourceId:w.sourceId,field:w.dimension,op:'equals',value:String(label),value2:''});renderAll();toast(`Filtered ${w.dimension}`)}
+function aggregate(rows,w){const dim=w.dimension||colsOf(w.sourceId)[0],measure=w.measureCol||colsOf(w.sourceId)[0],groups=new Map();rows.forEach(r=>{const key=dim==='__all__'?'All rows':String(r[dim]??'');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r)});const total=calcAgg(rows,measure,w.agg==='percent of total'?'sum':w.agg,w.countIf);let out=[...groups.entries()].map(([key,group])=>{let value=calcAgg(group,measure,w.agg,w.countIf);if(w.agg==='percent of total')value=total?calcAgg(group,measure,'sum',w.countIf)/total*100:0;return{key,value}});if((w.sortBy||'none')==='dimension')out.sort((a,b)=>String(a.key).localeCompare(String(b.key)));if((w.sortBy||'none')==='measure')out.sort((a,b)=>a.value-b.value);if((w.sortDir||'desc')==='desc')out.reverse();const n=Number(w.topN||0);return out.slice(0,n>0?n:60)}
+function calcAgg(group,col,agg,countIf){if(agg==='count')return group.length;if(agg==='countif')return group.filter(r=>String(r[col])===String(countIf)).length;if(agg==='count distinct')return new Set(group.map(r=>r[col])).size;if(agg==='first')return group.length?group[0][col]:'';if(agg==='last')return group.length?group[group.length-1][col]:'';const nums=group.map(r=>numberish(r[col])).filter(Number.isFinite).sort((a,b)=>a-b);if(!nums.length)return 0;if(agg==='sum'||agg==='percent of total')return nums.reduce((a,b)=>a+b,0);if(agg==='average')return nums.reduce((a,b)=>a+b,0)/nums.length;if(agg==='median'){const m=Math.floor(nums.length/2);return nums.length%2?nums[m]:(nums[m-1]+nums[m])/2}if(agg==='min')return Math.min(...nums);if(agg==='max')return Math.max(...nums);if(agg==='range')return Math.max(...nums)-Math.min(...nums);return 0}
+function openFullscreen(id){const page=activePage();const w=page?.widgets?.find(x=>x.id===id);if(!w)return;$('modalTitle').textContent=w.title||'Widget';$('modal').classList.remove('hidden');$('modalBody').innerHTML=`<div id="modal_widget_body" style="height:100%;min-height:480px"></div>`;renderWidgetBody(w,'modal_widget_body')}
+$('projectFile').addEventListener('change',e=>{if(e.target.files[0])readFile(e.target.files[0])});$('projectFileBig').addEventListener('change',e=>{if(e.target.files[0])readFile(e.target.files[0])});$('pageTabs').addEventListener('click',e=>{const id=e.target.closest('[data-page]')?.dataset.page;if(id){activePageId=id;renderAll()}});$('pageSelect').addEventListener('change',e=>{activePageId=e.target.value;renderAll()});$('filterSource').addEventListener('change',renderFilters);$('addFilterBtn').addEventListener('click',()=>{const p=activePage();if(!p)return;const field=$('filterField').value,value=$('filterValue').value;if(!field||!value)return toast('Choose a field and value');p.filters=p.filters||[];p.filters.push({id:'vf_'+Math.random().toString(36).slice(2),sourceId:$('filterSource').value,field,op:'equals',value,value2:''});$('filterValue').value='';renderAll()});$('filterChips').addEventListener('click',e=>{const id=e.target.closest('[data-remove-filter]')?.dataset.removeFilter;if(!id)return;const p=activePage();p.filters=(p.filters||[]).filter(f=>f.id!==id);renderAll()});$('resetFiltersBtn').addEventListener('click',()=>{(project?.pages||[]).forEach(p=>p.filters=[]);renderAll();toast('Filters reset')});$('canvas').addEventListener('click',e=>{const id=e.target.closest('[data-fullscreen]')?.dataset.fullscreen;if(id)openFullscreen(id)});$('closeModal').addEventListener('click',()=>$('modal').classList.add('hidden'));$('modal').addEventListener('click',e=>{if(e.target.id==='modal')$('modal').classList.add('hidden')});document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.add('hidden')});
+async function loadProjectFromUrlParam(){const params=new URLSearchParams(location.search);const url=params.get('project')||params.get('src');if(!url)return false;try{const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);loadProject(await res.json());toast('Project loaded from link');return true}catch(err){console.error(err);toast('Could not load project link');return false}}
+(async function initViewer(){try{const b64=window.DATABENCH_EMBEDDED_B64;if(b64&&b64!=='__DATABENCH_PROJECT_B64__'){loadProject(JSON.parse(decodeB64Unicode(b64)));return}}catch(err){console.error(err);toast('Could not load embedded project')}await loadProjectFromUrlParam();})();
+</script>
+</body>
+</html>
+
+  </template>
+
+<script>
+const APP_VERSION = '1.4.0';
+const AUTOSAVE_KEY = 'databench_autosave_current';
+const AUTOSAVE_LEGACY_KEYS = ['databench_autosave_v133','databench_autosave_v132','databench_autosave_v131','databench_autosave_v13','databench_autosave_v12','databench_autosave_v11','databench_autosave_v10'];
+const PANEL_PREF_KEY = 'databench_panel_prefs_v133';
+const WORKFLOW_PREF_KEY = 'databench_workflow_prefs_v133';
+let autosaveReady = false;
+let autosaveTimer = null;
+let autosaveDirty = false;
+let lastAutosaveAt = null;
+const state = {
+  appVersion: APP_VERSION,
+  projectName: 'Untitled DataBench Project',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  schemaVersion: 3,
+  sources: [],
+  pages: [],
+  activePageId: null,
+  selectedWidgetId: null,
+  globalFilters: [],
+  relationships: [],
+  theme: {
+    preset:'dark', name:'Dark Professional', accent:'#38bdf8', accent2:'#a78bfa', bg:'#0f172a', panel:'#111827', panel2:'#1f2937', text:'#e5e7eb', muted:'#94a3b8', border:'rgba(255,255,255,.12)', canvas:'#f8fafc', card:'#ffffff', canvasGrid:'#e2e8f0', shadow:'0 10px 30px rgba(0,0,0,.25)'
+  }
+};
+const charts = new Map();
+let historyStack = [];
+let redoStack = [];
+let restoringHistory = false;
+const $ = id => document.getElementById(id);
+const uid = prefix => `${prefix}_${Math.random().toString(36).slice(2,9)}`;
+
+const THEME_PRESETS = {
+  light: { name:'Light Professional', accent:'#2563eb', accent2:'#7c3aed', bg:'#f8fafc', panel:'#ffffff', panel2:'#eef2ff', text:'#0f172a', muted:'#64748b', border:'rgba(15,23,42,.14)', canvas:'#f8fafc', card:'#ffffff', canvasGrid:'#e2e8f0', shadow:'0 10px 30px rgba(15,23,42,.14)' },
+  dark: { name:'Dark Professional', accent:'#38bdf8', accent2:'#a78bfa', bg:'#0f172a', panel:'#111827', panel2:'#1f2937', text:'#e5e7eb', muted:'#94a3b8', border:'rgba(255,255,255,.12)', canvas:'#f8fafc', card:'#ffffff', canvasGrid:'#e2e8f0', shadow:'0 10px 30px rgba(0,0,0,.25)' },
+  slate: { name:'Slate Minimal', accent:'#475569', accent2:'#0ea5e9', bg:'#e2e8f0', panel:'#f8fafc', panel2:'#cbd5e1', text:'#0f172a', muted:'#475569', border:'rgba(15,23,42,.18)', canvas:'#f1f5f9', card:'#ffffff', canvasGrid:'#cbd5e1', shadow:'0 12px 28px rgba(51,65,85,.16)' },
+  forest: { name:'Forest Workshop', accent:'#22c55e', accent2:'#f59e0b', bg:'#0f1f17', panel:'#15291e', panel2:'#21412e', text:'#ecfdf5', muted:'#9ecab0', border:'rgba(187,247,208,.16)', canvas:'#f6f7ed', card:'#ffffff', canvasGrid:'#d9e4cc', shadow:'0 12px 30px rgba(6,78,59,.26)' },
+  ocean: { name:'Ocean Lab', accent:'#06b6d4', accent2:'#2563eb', bg:'#082f49', panel:'#0c4a6e', panel2:'#075985', text:'#e0f2fe', muted:'#bae6fd', border:'rgba(224,242,254,.18)', canvas:'#ecfeff', card:'#ffffff', canvasGrid:'#bae6fd', shadow:'0 12px 30px rgba(8,47,73,.3)' },
+  candy: { name:'Candy Pop', accent:'#ec4899', accent2:'#8b5cf6', bg:'#fff1f2', panel:'#ffffff', panel2:'#ffe4e6', text:'#4a044e', muted:'#9d174d', border:'rgba(236,72,153,.18)', canvas:'#fff7ed', card:'#ffffff', canvasGrid:'#fecdd3', shadow:'0 12px 30px rgba(236,72,153,.18)' },
+  retro: { name:'Retro Arcade', accent:'#facc15', accent2:'#fb7185', bg:'#1a102b', panel:'#27143f', panel2:'#3b1d63', text:'#fef3c7', muted:'#d8b4fe', border:'rgba(250,204,21,.2)', canvas:'#fff7ed', card:'#fffbea', canvasGrid:'#fde68a', shadow:'0 12px 30px rgba(88,28,135,.32)' },
+  maker: { name:'Maker Neon', accent:'#00e5ff', accent2:'#ff2bd6', bg:'#050816', panel:'#0b1024', panel2:'#141b3d', text:'#e0faff', muted:'#8be9fd', border:'rgba(0,229,255,.18)', canvas:'#f8fafc', card:'#ffffff', canvasGrid:'#c7d2fe', shadow:'0 0 24px rgba(0,229,255,.16)' }
+};
+function defaultTheme(name='dark') { return { preset:name, ...THEME_PRESETS[name] }; }
+function normalizeTheme(theme={}) { return { ...defaultTheme(theme.preset && THEME_PRESETS[theme.preset] ? theme.preset : 'dark'), ...theme }; }
+function setThemePreset(name) { state.theme = normalizeTheme(defaultTheme(name)); renderAll(); toast(`${THEME_PRESETS[name]?.name || 'Theme'} applied.`); }
+function colorToRgba(hex, alpha=.22) {
+  const m = String(hex || '').replace('#','');
+  if (!/^[0-9a-f]{6}$/i.test(m)) return `rgba(15,23,42,${alpha})`;
+  const r = parseInt(m.slice(0,2),16), g = parseInt(m.slice(2,4),16), b = parseInt(m.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function toast(msg) {
+  $('toast').textContent = msg;
+  $('toast').style.display = 'block';
+  setTimeout(() => $('toast').style.display = 'none', 2300);
+}
+function normalizeRows(rows) {
+  return rows.map(row => {
+    const out = {};
+    for (const [k,v] of Object.entries(row)) out[String(k).trim()] = v == null ? '' : v;
+    return out;
+  });
+}
+function columnsOf(sourceId) {
+  const src = state.sources.find(s => s.id === sourceId);
+  return src ? src.columns : [];
+}
+function rowsOf(sourceId) {
+  const src = state.sources.find(s => s.id === sourceId);
+  if (!src) return [];
+  applyCalculatedFields(src);
+  return src.rows;
+}
+function parseCSV(text) {
+  const wb = XLSX.read(text, { type: 'string' });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(sheet, { defval: '' });
+}
+async function parseFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'csv') return parseCSV(await file.text());
+  const buffer = await file.arrayBuffer();
+  const wb = XLSX.read(buffer, { type: 'array' });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(sheet, { defval: '' });
+}
+function addSource(name, rows, kind='upload') {
+  rows = normalizeRows(rows);
+  const columns = Array.from(new Set(rows.flatMap(r => Object.keys(r))));
+  const fields = inferFields(rows, columns);
+  const source = { id: uid('src'), name, kind, columns, rows, fields, calculatedFields: [], profile: profileSource(rows, columns, fields) };
+  state.sources.push(source);
+
+  const tablePage = { id: uid('page'), title: `Table: ${name}`, widgets: [] };
+  tablePage.widgets.push(defaultWidget({ type: 'table', sourceId: source.id, title: name, x: 28, y: 72, w: 1120, h: 560 }));
+  state.pages.push(tablePage);
+
+  const summaryPage = { id: uid('page'), title: `Summary: ${name}`, widgets: [] };
+  summaryPage.widgets.push(defaultWidget({ type: 'summary', sourceId: source.id, title: `Data Summary: ${name}`, x: 28, y: 72, w: 1120, h: 560 }));
+  state.pages.push(summaryPage);
+
+  state.activePageId = tablePage.id;
+  renderAll();
+}
+
+function inferFields(rows, columns) {
+  return columns.map(col => inferField(rows, col));
+}
+function inferField(rows, col) {
+  const values = rows.map(r => r[col]);
+  const nonBlank = values.filter(v => String(v ?? '').trim() !== '');
+  const sample = nonBlank.slice(0, 300);
+  const unique = new Set(nonBlank.map(v => String(v))).size;
+  const missing = values.length - nonBlank.length;
+  const numberHits = sample.filter(v => Number.isFinite(numberish(v))).length;
+  const dateHits = sample.filter(v => looksLikeDate(v)).length;
+  const boolHits = sample.filter(v => /^(true|false|yes|no|y|n|0|1)$/i.test(String(v).trim())).length;
+  let type = 'text';
+  if (sample.length && numberHits / sample.length >= .85) type = 'number';
+  else if (sample.length && dateHits / sample.length >= .85) type = 'date';
+  else if (sample.length && boolHits / sample.length >= .9) type = 'boolean';
+  const uniqueRatio = nonBlank.length ? unique / nonBlank.length : 0;
+  const role = (type === 'number' && uniqueRatio < .85) ? 'measure' : 'dimension';
+  const possibleKey = nonBlank.length === rows.length && uniqueRatio >= .95;
+  return { name: col, type, role, missing, unique, uniqueRatio, possibleKey };
+}
+function looksLikeDate(v) {
+  if (v instanceof Date && !isNaN(v)) return true;
+  const s = String(v ?? '').trim();
+  if (!s || /^\d+([.,]\d+)?$/.test(s)) return false;
+  const t = Date.parse(s);
+  return Number.isFinite(t);
+}
+function profileSource(rows, columns, fields) {
+  const numericFields = fields.filter(f => f.type === 'number').map(f => f.name);
+  const dateFields = fields.filter(f => f.type === 'date').map(f => f.name);
+  return {
+    rows: rows.length,
+    columns: columns.length,
+    numericFields: numericFields.length,
+    dateFields: dateFields.length,
+    possibleKeys: fields.filter(f => f.possibleKey).map(f => f.name),
+    missingCells: fields.reduce((a,f) => a + f.missing, 0)
+  };
+}
+
+function makeFieldIdentifier(name) {
+  return String(name || '').trim().replace(/[^A-Za-z0-9_$]/g, '_').replace(/^[^A-Za-z_$]+/, '_') || 'field';
+}
+function applyCalculatedFields(src) {
+  src.calculatedFields = src.calculatedFields || [];
+  if (!src.calculatedFields.length) return;
+  const calcSig = JSON.stringify(src.calculatedFields.map(c => [c.name, c.formula]));
+  if (src._calcSig === calcSig) return;
+  src.calculatedFields.forEach(calc => {
+    src.rows.forEach(row => { row[calc.name] = evaluateFormula(calc.formula, row); });
+    if (!src.columns.includes(calc.name)) src.columns.push(calc.name);
+  });
+  src.fields = inferFields(src.rows, src.columns).map(f => {
+    const calc = src.calculatedFields.find(c => c.name === f.name);
+    return calc ? Object.assign(f, { calculated: true, formula: calc.formula }) : f;
+  });
+  src.profile = profileSource(src.rows, src.columns, src.fields);
+  src._calcSig = calcSig;
+}
+function evaluateFormula(formula, row) {
+  try {
+    const originalFormula = String(formula || '');
+    const helpers = {
+      number: v => Number.isFinite(numberish(v)) ? numberish(v) : 0,
+      text: v => String(v ?? ''),
+      upper: v => String(v ?? '').toUpperCase(),
+      lower: v => String(v ?? '').toLowerCase(),
+      trim: v => String(v ?? '').trim(),
+      contains: (v, q) => String(v ?? '').toLowerCase().includes(String(q ?? '').toLowerCase()),
+      year: v => { const d = new Date(v); return isNaN(d) ? '' : d.getFullYear(); },
+      month: v => { const d = new Date(v); return isNaN(d) ? '' : d.getMonth() + 1; },
+      day: v => { const d = new Date(v); return isNaN(d) ? '' : d.getDate(); },
+      ifelse: (cond, yes, no) => cond ? yes : no,
+      round: (v, digits=0) => { const n = numberish(v); if (!Number.isFinite(n)) return ''; const m = Math.pow(10, Number(digits)||0); return Math.round(n*m)/m; }
+    };
+    const names = Object.keys(row);
+    const safeNames = [];
+    const values = [];
+    names.forEach(name => {
+      const id = makeFieldIdentifier(name);
+      if (!safeNames.includes(id)) { safeNames.push(id); values.push(row[name]); }
+    });
+    const formulaWithBrackets = originalFormula.replace(/\[([^\]]+)\]/g, (_, fieldName) => makeFieldIdentifier(fieldName));
+    const helperNames = Object.keys(helpers);
+    const fn = new Function(...helperNames, ...safeNames, `return (${formulaWithBrackets});`);
+    const val = fn(...helperNames.map(k => helpers[k]), ...values);
+    return val == null ? '' : val;
+  } catch (err) {
+    return '';
+  }
+}
+function renderCalcControls() {
+  const srcSel = $('calcSource'); if (!srcSel) return;
+  const current = srcSel.value;
+  srcSel.innerHTML = state.sources.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  if (current && state.sources.some(s => s.id === current)) srcSel.value = current;
+  renderCalcFieldList();
+}
+function renderCalcFieldList() {
+  const list = $('calcFieldList'); if (!list) return;
+  const src = state.sources.find(s => s.id === $('calcSource')?.value) || state.sources[0];
+  if (!src) { list.innerHTML = '<p class="hint">Load a data source first.</p>'; return; }
+  src.calculatedFields = src.calculatedFields || [];
+  if (!src.calculatedFields.length) { list.innerHTML = '<p class="hint">No calculated fields yet.</p>'; return; }
+  list.innerHTML = src.calculatedFields.map(c => `<div class="list-item"><strong>${escapeHtml(c.name)}</strong><span>${escapeHtml(c.formula)}</span><div class="relationship-actions"><button class="danger" data-delete-calc="${escapeAttr(c.name)}">Delete</button></div></div>`).join('');
+}
+function addCalculatedField() {
+  const src = state.sources.find(s => s.id === $('calcSource').value);
+  if (!src) return toast('Load a data source first.');
+  const name = $('calcName').value.trim();
+  const formula = $('calcFormula').value.trim();
+  if (!name || !formula) return toast('Enter a calculated field name and formula.');
+  if (!/^[A-Za-z_][A-Za-z0-9_ ]*$/.test(name)) return toast('Use a simple field name: letters, numbers, spaces, and underscores.');
+  src.calculatedFields = src.calculatedFields || [];
+  src.calculatedFields = src.calculatedFields.filter(c => c.name !== name);
+  src.columns = src.columns.filter(c => c !== name);
+  src.rows.forEach(r => delete r[name]);
+  src.calculatedFields.push({ name, formula });
+  src._calcSig = null;
+  applyCalculatedFields(src);
+  $('calcName').value = ''; $('calcFormula').value = '';
+  renderAll();
+  toast(`Calculated field added: ${name}`);
+}
+
+function defaultWidget(overrides={}) {
+  return Object.assign({
+    id: uid('w'), title: 'New Widget', type: 'bar', sourceId: state.sources[0]?.id || null,
+    x: 70, y: 90, w: 520, h: 330, dimension: '', pivotColumn: '', measureCol: '', agg: 'sum', countIf: '',
+    colors: ['#38bdf8','#a78bfa','#34d399','#f59e0b','#fb7185','#60a5fa'], bg: state.theme.card, text: '#0f172a', sortBy: 'measure', sortDir: 'desc', topN: 0, filters: []
+  }, overrides);
+}
+function activePage() { return state.pages.find(p => p.id === state.activePageId); }
+function selectedWidget() {
+  const page = activePage();
+  return page?.widgets.find(w => w.id === state.selectedWidgetId);
+}
+
+let isRendering = false;
+function renderAll() {
+  isRendering = true;
+  applyTheme(); renderSourceList(); renderCalcControls(); renderJoinControls(); renderPages(); renderCanvas(); renderInspector(); renderFields(); renderFilterControls(); updateHistoryButtons(); queueAutosave(); commitHistory();
+  isRendering = false;
+}
+function applyTheme() {
+  state.theme = normalizeTheme(state.theme);
+  const t = state.theme;
+  const root = document.documentElement;
+  root.style.setProperty('--bg', t.bg);
+  root.style.setProperty('--panel', t.panel);
+  root.style.setProperty('--panel-2', t.panel2);
+  root.style.setProperty('--text', t.text);
+  root.style.setProperty('--muted', t.muted);
+  root.style.setProperty('--border', t.border || colorToRgba(t.text, .14));
+  root.style.setProperty('--accent', t.accent);
+  root.style.setProperty('--accent-2', t.accent2);
+  root.style.setProperty('--canvas-bg', t.canvas);
+  root.style.setProperty('--canvas-grid', colorToRgba(t.canvasGrid || t.accent, .45));
+  root.style.setProperty('--card', t.card);
+  root.style.setProperty('--shadow', t.shadow || '0 10px 30px rgba(0,0,0,.25)');
+  const set = (id, val) => { if ($(id)) $(id).value = val; };
+  set('themePresetSelect', t.preset || 'custom');
+  set('accentColor', t.accent); set('accent2Color', t.accent2);
+  set('bgColor', t.bg); set('panelColor', t.panel); set('panel2Color', t.panel2);
+  set('textColor', t.text); set('mutedColor', t.muted);
+  set('canvasColor', t.canvas); set('cardColor', t.card); set('canvasGridColor', t.canvasGrid || t.accent);
+}
+function renderSourceList() {
+  $('sourceList').innerHTML = state.sources.map(s => `<div class="list-item ${s.id === selectedWidget()?.sourceId ? 'active' : ''}" data-source="${s.id}"><strong>${escapeHtml(s.name)}</strong><span>${s.rows.length} rows · ${s.columns.length} fields · ${s.kind}${s.profile?.possibleKeys?.length ? ' · possible key: ' + escapeHtml(s.profile.possibleKeys[0]) : ''}</span></div>`).join('') || '<p class="hint">No files loaded.</p>';
+}
+function renderJoinControls() {
+  if (!$('joinLeft')) return;
+  const previousLeft = $('joinLeft').value;
+  const previousRight = $('joinRight').value;
+  const opts = state.sources.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  $('joinLeft').innerHTML = opts; $('joinRight').innerHTML = opts;
+  if (previousLeft && state.sources.some(s => s.id === previousLeft)) $('joinLeft').value = previousLeft;
+  if (previousRight && state.sources.some(s => s.id === previousRight)) $('joinRight').value = previousRight;
+  else if (state.sources[1]) $('joinRight').value = state.sources[1].id;
+  refreshJoinKeys();
+  renderRelationshipList();
+}
+function refreshJoinKeys() {
+  if (!$('joinKey')) return;
+  const leftSrc = state.sources.find(s => s.id === $('joinLeft').value);
+  const rightSrc = state.sources.find(s => s.id === $('joinRight').value);
+  const left = leftSrc?.columns || [];
+  const right = new Set(rightSrc?.columns || []);
+  const common = left.filter(c => right.has(c));
+  const scored = common.map(c => ({ col:c, score: keyScore(leftSrc, rightSrc, c) })).sort((a,b)=>b.score-a.score || a.col.localeCompare(b.col));
+  $('joinKey').innerHTML = scored.map(x => `<option value="${escapeAttr(x.col)}">${escapeHtml(x.col)}${x.score >= 4 ? ' ★ suggested' : ''}</option>`).join('') || '<option value="">No matching field names</option>';
+  updateJoinDiagnostics();
+}
+function keyScore(leftSrc, rightSrc, col) {
+  const lf = leftSrc?.fields?.find(f => f.name === col), rf = rightSrc?.fields?.find(f => f.name === col);
+  let score = 0;
+  if (/id$|_id$|key|code|number|no\.?$/i.test(col)) score += 2;
+  if (lf?.possibleKey) score += 2;
+  if (rf?.possibleKey) score += 2;
+  if (lf?.type && rf?.type && lf.type === rf.type) score += 1;
+  return score;
+}
+function duplicateKeyStats(src, key) {
+  const counts = new Map();
+  let blanks = 0;
+  (src?.rows || []).forEach(r => {
+    const k = String(r[key] ?? '').trim();
+    if (!k) blanks++;
+    counts.set(k, (counts.get(k) || 0) + 1);
+  });
+  let duplicateValues = 0, duplicateRows = 0;
+  counts.forEach((count, k) => { if (k && count > 1) { duplicateValues++; duplicateRows += count; } });
+  return { blanks, duplicateValues, duplicateRows, uniqueValues: Array.from(counts.keys()).filter(Boolean).length };
+}
+function updateJoinDiagnostics() {
+  if (!$('joinDiagnostics')) return;
+  const left = state.sources.find(s => s.id === $('joinLeft').value), right = state.sources.find(s => s.id === $('joinRight').value), key = $('joinKey').value;
+  if (!left || !right || !key) { $('joinDiagnostics').innerHTML = 'Choose two tables with at least one matching field name.'; return; }
+  const l = duplicateKeyStats(left, key), r = duplicateKeyStats(right, key);
+  const matchKeys = new Set(right.rows.map(row => String(row[key] ?? '').trim()).filter(Boolean));
+  const matchedLeftRows = left.rows.filter(row => matchKeys.has(String(row[key] ?? '').trim())).length;
+  const manyWarn = r.duplicateValues ? `<span class="diagnostic-warn">Lookup key has ${r.duplicateValues} duplicated value(s), which may duplicate joined rows.</span>` : '<span class="diagnostic-good">Lookup key appears unique.</span>';
+  $('joinDiagnostics').innerHTML = `
+    <p>${manyWarn}</p>
+    <p>${matchedLeftRows}/${left.rows.length} primary rows have a matching lookup row. Primary blanks: ${l.blanks}. Lookup blanks: ${r.blanks}.</p>
+  `;
+}
+function renderRelationshipList() {
+  const list = $('relationshipList'); if (!list) return;
+  state.relationships = state.relationships || [];
+  if (!state.relationships.length) { list.innerHTML = '<p class="hint">No saved relationships yet.</p>'; return; }
+  list.innerHTML = state.relationships.map(rel => `
+    <div class="list-item">
+      <strong>${escapeHtml(sourceName(rel.leftId))} → ${escapeHtml(sourceName(rel.rightId))}</strong>
+      <span>${escapeHtml(rel.key)} · ${escapeHtml(rel.joinType || 'left')} join · ${escapeHtml(rel.name || 'relationship')}</span>
+      <div class="relationship-actions">
+        <button data-materialize-rel="${rel.id}">Create table</button>
+        <button class="danger" data-delete-rel="${rel.id}">Delete</button>
+      </div>
+    </div>`).join('');
+}
+function currentRelationshipFromControls() {
+  return { id: uid('rel'), leftId: $('joinLeft').value, rightId: $('joinRight').value, key: $('joinKey').value, joinType: $('joinType')?.value || 'left', name: $('joinOutputName')?.value.trim() || '' };
+}
+function createJoinedSource(rel) {
+  const left = state.sources.find(s => s.id === rel.leftId), right = state.sources.find(s => s.id === rel.rightId), key = rel.key;
+  if (!left || !right || !key) { toast('Choose two tables with a matching key field.'); return; }
+  const rightIndex = new Map();
+  right.rows.forEach(r => {
+    const k = String(r[key] ?? '').trim();
+    if (!rightIndex.has(k)) rightIndex.set(k, []);
+    rightIndex.get(k).push(r);
+  });
+  const rows = [];
+  left.rows.forEach(l => {
+    const k = String(l[key] ?? '').trim();
+    const matches = rightIndex.get(k) || [];
+    if (!matches.length && rel.joinType === 'inner') return;
+    (matches.length ? matches : [{}]).forEach(r => {
+      const out = {...l};
+      for (const c of right.columns) {
+        if (c === key) continue;
+        const outCol = left.columns.includes(c) ? `${right.name}.${c}` : c;
+        out[outCol] = r[c] ?? '';
+      }
+      rows.push(out);
+    });
+  });
+  const label = rel.name || `${left.name} ${rel.joinType === 'inner' ? 'inner joined with' : 'linked to'} ${right.name}`;
+  addSource(label, rows, 'joined');
+  toast(`Created joined table with ${rows.length} rows.`);
+}
+function renderPages() {
+  $('pagesBar').innerHTML = state.pages.map(p => `<button class="tab ${p.id===state.activePageId?'active':''}" data-page="${p.id}">${escapeHtml(p.title)}</button>`).join('') + '<button id="miniAddPage" class="tab">+ Page</button>';
+}
+function renderCanvas() {
+  for (const c of charts.values()) c.destroy(); charts.clear();
+  const canvas = $('canvas');
+  const page = activePage();
+  if (!page) { canvas.innerHTML = '<div class="empty"><div><h2>Upload a data file to begin.</h2><p>Default pages will be generated with a table for each uploaded file.</p></div></div>'; return; }
+  canvas.innerHTML = `<div class="canvas-title"><input id="pageTitleInput" value="${escapeAttr(page.title)}"><button id="renamePageBtn" class="small">Rename Page</button></div>${renderFilterBanner(page)}`;
+  page.widgets.forEach(w => canvas.appendChild(renderWidget(w)));
+  page.widgets.forEach(w => renderWidgetContents(w));
+}
+
+function selectWidget(id, fullRender=false) {
+  state.selectedWidgetId = id;
+  document.querySelectorAll('.widget').forEach(node => node.classList.toggle('active', node.dataset.widget === id));
+  renderInspector();
+  renderFields();
+  renderFilterControls();
+  if (fullRender) renderAll();
+}
+function activatePanelTab(panelSelector, key) {
+  const panel = document.querySelector(panelSelector + ' .panel-content');
+  if (!panel) return;
+  const tabBar = panel.querySelector('.workflow-tabs, .inspector-tabs');
+  const btn = tabBar?.querySelector(`[data-tab-key="${CSS.escape(key)}"]`);
+  if (btn) btn.click();
+}
+function openWidgetEditor(id) {
+  if (!id) return;
+  const app = document.querySelector('.app');
+  app?.classList.remove('right-collapsed');
+  syncPanelToggleLabels?.();
+  savePanelPrefs?.();
+  selectWidget(id, false);
+  activatePanelTab('aside.right-panel', 'configure');
+  setTimeout(() => $('inspector')?.scrollIntoView({ block:'start', behavior:'smooth' }), 30);
+}
+
+function renderWidget(w) {
+  const el = document.createElement('div');
+  el.className = `widget ${w.id === state.selectedWidgetId ? 'active' : ''}`;
+  el.dataset.widget = w.id;
+  el.style.left = `${w.x}px`; el.style.top = `${w.y}px`; el.style.width = `${w.w}px`; el.style.height = `${w.h}px`;
+  el.style.background = w.bg || state.theme.card; el.style.color = w.text || '#0f172a';
+  el.innerHTML = `<div class="widget-head"><strong>${escapeHtml(w.title)}</strong><button class="small" data-edit-widget="${w.id}" title="Open widget settings">Edit</button></div><div class="widget-body" id="body_${w.id}"></div>`;
+  makeDraggable(el, w);
+  el.addEventListener('pointerdown', e => {
+    if (!el.classList.contains('dragging')) selectWidget(w.id, false);
+      queueAutosave();
+  });
+  el.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    selectWidget(w.id, false);
+    showWidgetContextMenu(e.clientX, e.clientY, w.id);
+  });
+  new ResizeObserver(entries => {
+    const r = entries[0].contentRect;
+    if (Math.abs(w.w-r.width)>2 || Math.abs(w.h-r.height)>2) { w.w=Math.round(r.width); w.h=Math.round(r.height); renderInspector(); renderWidgetContents(w); queueAutosave(); }
+  }).observe(el);
+  return el;
+}
+function renderWidgetContents(w) {
+  const body = $(`body_${w.id}`); if (!body) return;
+  const baseRows = rowsOf(w.sourceId);
+  if (!baseRows.length) { body.innerHTML = '<p>No data selected.</p>'; return; }
+  const rows = filteredRowsForWidget(w);
+  if (w.type === 'table') return renderTable(body, rows, columnsOf(w.sourceId), baseRows.length);
+  if (w.type === 'summary') return renderSummary(body, w.sourceId, rows, baseRows.length);
+  if (w.type === 'pivot') return renderPivotTable(body, w, rows, baseRows.length);
+  if (w.type === 'kpi') return renderKpi(body, w, rows);
+  body.innerHTML = `<canvas id="chart_${w.id}"></canvas>`;
+  const data = aggregate(rows, w);
+  const ctx = $(`chart_${w.id}`);
+  const colors = (w.colors?.length ? w.colors : ['#38bdf8']).map(String);
+  charts.set(w.id, new Chart(ctx, {
+    type: chartJsType(w.type),
+    data: w.type === 'scatter' ? {
+      datasets: [{ label: w.title, data: rows.map(r => ({ x: numberish(r[w.dimension]), y: numberish(r[w.measureCol]), __label: String(r[w.dimension] ?? '') })).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y)), backgroundColor: colors[0], borderColor: colors[0] }]
+    } : {
+      labels: data.map(d => d.key), datasets: [{ label: `${w.agg} ${w.measureCol || ''}`, data: data.map(d => d.value), backgroundColor: data.map((_,i)=>colors[i%colors.length]), borderColor: colors[0] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, onClick: (evt, elements, chart) => chartClickFilter(evt, elements, chart, w, data), plugins: { legend: { display: ['pie','donut'].includes(w.type) }, title: { display: false }, tooltip: { callbacks: { footer: () => w.dimension ? 'Click to filter this page' : '' } } }, indexAxis: w.type === 'horizontalBar' ? 'y' : 'x', scales: ['pie','donut'].includes(w.type) ? {} : { y: { beginAtZero: true } } }
+  }));
+}
+function renderTable(container, rows, cols, totalRows=rows.length) {
+  const limitedRows = rows.slice(0, 250), limitedCols = cols.slice(0, 30);
+  const filteredNote = totalRows !== rows.length ? `<p>${formatNumber(rows.length)} of ${formatNumber(totalRows)} rows after filters.</p>` : '';
+  container.innerHTML = `${filteredNote}<table class="data-table"><thead><tr>${limitedCols.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${limitedRows.map(r=>`<tr>${limitedCols.map(c=>`<td>${escapeHtml(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>${rows.length>250?'<p>Showing first 250 rows.</p>':''}`;
+}
+
+
+function renderPivotTable(container, w, rows, totalRows=rows.length) {
+  const rowField = w.dimension || columnsOf(w.sourceId)[0];
+  const colField = w.pivotColumn || '';
+  const measure = w.measureCol || columnsOf(w.sourceId)[0];
+  if (!rowField) { container.innerHTML = '<p>Select a pivot row field.</p>'; return; }
+  const rowKeys = Array.from(new Set(rows.map(r => String(r[rowField] ?? '')))).sort((a,b)=>a.localeCompare(b)).slice(0, 60);
+  const colKeys = colField ? Array.from(new Set(rows.map(r => String(r[colField] ?? '')))).sort((a,b)=>a.localeCompare(b)).slice(0, 24) : ['Value'];
+  const matrix = new Map();
+  rowKeys.forEach(rk => matrix.set(rk, new Map()));
+  rowKeys.forEach(rk => colKeys.forEach(ck => matrix.get(rk).set(ck, [])));
+  rows.forEach(r => {
+    const rk = String(r[rowField] ?? '');
+    if (!matrix.has(rk)) return;
+    const ck = colField ? String(r[colField] ?? '') : 'Value';
+    if (!matrix.get(rk).has(ck)) return;
+    matrix.get(rk).get(ck).push(r);
+  });
+  const filteredNote = totalRows !== rows.length ? `<p>${formatNumber(rows.length)} of ${formatNumber(totalRows)} rows after filters.</p>` : '';
+  const head = `<tr><th>${escapeHtml(rowField)}</th>${colKeys.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}<th>Total</th></tr>`;
+  const body = rowKeys.map(rk => {
+    const cells = colKeys.map(ck => calcAgg(matrix.get(rk).get(ck), measure, w.agg, w.countIf));
+    const total = calcAgg(rows.filter(r => String(r[rowField] ?? '') === rk), measure, w.agg, w.countIf);
+    return `<tr><th>${escapeHtml(rk)}</th>${cells.map(v=>`<td>${escapeHtml(formatMaybeNumber(v))}</td>`).join('')}<td><strong>${escapeHtml(formatMaybeNumber(total))}</strong></td></tr>`;
+  }).join('');
+  const grand = colKeys.map(ck => calcAgg(rows.filter(r => !colField || String(r[colField] ?? '') === ck), measure, w.agg, w.countIf));
+  const grandTotal = calcAgg(rows, measure, w.agg, w.countIf);
+  container.innerHTML = `${filteredNote}<table class="data-table pivot-table"><thead>${head}</thead><tbody>${body}<tr><th>Total</th>${grand.map(v=>`<td><strong>${escapeHtml(formatMaybeNumber(v))}</strong></td>`).join('')}<td><strong>${escapeHtml(formatMaybeNumber(grandTotal))}</strong></td></tr></tbody></table><p class="hint">Pivot limits: 60 row groups and 24 column groups for browser performance.</p>`;
+}
+function formatMaybeNumber(v) { return typeof v === 'number' && Number.isFinite(v) ? formatNumber(v) : String(v ?? ''); }
+
+function chartJsType(type) {
+  if (type === 'horizontalBar') return 'bar';
+  if (type === 'donut') return 'doughnut';
+  return type === 'scatter' ? 'scatter' : type;
+}
+function renderSummary(container, sourceId, filteredRows=null, totalRows=null) {
+  const src = state.sources.find(s => s.id === sourceId);
+  if (!src) { container.innerHTML = '<p>No source selected.</p>'; return; }
+  if (!src.fields) { src.fields = inferFields(src.rows, src.columns); src.profile = profileSource(src.rows, src.columns, src.fields); }
+  const shownRows = filteredRows || src.rows;
+  const cards = [
+    ['Rows shown', shownRows.length], ['Total rows', totalRows ?? src.profile.rows], ['Columns', src.profile.columns], ['Numeric fields', src.profile.numericFields], ['Date fields', src.profile.dateFields], ['Missing cells', src.profile.missingCells], ['Possible keys', src.profile.possibleKeys.length || 'None']
+  ];
+  const fieldCards = src.fields.map(f => {
+    const values = src.rows.map(r => r[f.name]);
+    const nums = values.map(numberish).filter(Number.isFinite);
+    const detail = f.type === 'number' && nums.length ? `min ${formatNumber(Math.min(...nums))} · max ${formatNumber(Math.max(...nums))} · avg ${formatNumber(nums.reduce((a,b)=>a+b,0)/nums.length)}` : `${f.unique} unique · ${f.missing} blank${f.possibleKey ? ' · possible key' : ''}`;
+    return `<div class="summary-card"><strong>${escapeHtml(f.name)}</strong><span>${escapeHtml(f.type)} · ${escapeHtml(f.role)}${f.calculated ? ' · calculated' : ''}</span><span>${escapeHtml(detail)}</span></div>`;
+  }).join('');
+  container.innerHTML = `<div class="summary-grid">${cards.map(([k,v]) => `<div class="summary-card"><strong>${escapeHtml(k)}</strong><b>${escapeHtml(v)}</b></div>`).join('')}</div><h3 style="margin:1rem 0 .5rem;">Field profile</h3><div class="summary-grid">${fieldCards}</div>`;
+}
+
+function renderKpi(container, w, rows) {
+  const data = aggregate(rows, Object.assign({}, w, { dimension: '__all__' }));
+  const value = data[0]?.value ?? 0;
+  container.innerHTML = `<div style="height:100%;display:grid;place-items:center;text-align:center;"><div><div style="font-size:3rem;font-weight:900;line-height:1;">${formatNumber(value)}</div><div style="margin-top:.4rem;color:inherit;opacity:.7;">${escapeHtml(w.agg)} ${escapeHtml(w.measureCol || '')}</div></div></div>`;
+}
+
+function activePageFilters() {
+  const p = activePage();
+  p.filters = p.filters || [];
+  return p.filters;
+}
+function renderFilterBanner(page) {
+  const filters = page.filters || [];
+  if (!filters.length) return '';
+  return `<div class="filter-banner">${filters.map(f => `<span>${escapeHtml(filterLabel(f))}</span>`).join('')}</div>`;
+}
+function filteredRowsForWidget(w) {
+  let rows = rowsOf(w.sourceId);
+  const pageFilters = activePageFilters().filter(f => f.sourceId === w.sourceId);
+  const widgetFilters = (w.filters || []).map(f => Object.assign({ sourceId: w.sourceId }, f));
+  return applyFilters(rows, [...pageFilters, ...widgetFilters]);
+}
+function applyFilters(rows, filters) {
+  return rows.filter(row => filters.every(f => rowMatchesFilter(row, f)));
+}
+function rowMatchesFilter(row, f) {
+  const raw = row[f.field];
+  const val = String(raw ?? '').trim();
+  const target = String(f.value ?? '').trim();
+  const target2 = String(f.value2 ?? '').trim();
+  const n = numberish(raw), a = numberish(target), b = numberish(target2);
+  const d = Date.parse(val), da = Date.parse(target), db = Date.parse(target2);
+  switch (f.op) {
+    case 'notEquals': return val !== target;
+    case 'contains': return val.toLowerCase().includes(target.toLowerCase());
+    case 'gt': return Number.isFinite(n) && Number.isFinite(a) && n > a;
+    case 'gte': return Number.isFinite(n) && Number.isFinite(a) && n >= a;
+    case 'lt': return Number.isFinite(n) && Number.isFinite(a) && n < a;
+    case 'lte': return Number.isFinite(n) && Number.isFinite(a) && n <= a;
+    case 'between': return Number.isFinite(n) && Number.isFinite(a) && Number.isFinite(b) ? n >= Math.min(a,b) && n <= Math.max(a,b) : Number.isFinite(d) && Number.isFinite(da) && Number.isFinite(db) && d >= Math.min(da,db) && d <= Math.max(da,db);
+    case 'before': return Number.isFinite(d) && Number.isFinite(da) && d < da;
+    case 'after': return Number.isFinite(d) && Number.isFinite(da) && d > da;
+    case 'equals':
+    default: return val === target;
+  }
+}
+function filterLabel(f) {
+  const opNames = { equals:'=', notEquals:'≠', contains:'contains', gt:'>', gte:'≥', lt:'<', lte:'≤', between:'between', before:'before', after:'after' };
+  return `${sourceName(f.sourceId)} · ${f.field} ${opNames[f.op] || f.op} ${f.value}${f.value2 ? ' and ' + f.value2 : ''}`;
+}
+function sourceName(id) { return state.sources.find(s => s.id === id)?.name || 'Source'; }
+function chartClickFilter(evt, elements, chart, w, data) {
+  if (!elements?.length || !w.dimension || w.dimension === '__all__' || ['scatter'].includes(w.type)) return;
+  const idx = elements[0].index;
+  const label = data[idx]?.key;
+  if (label == null) return;
+  const filters = activePageFilters();
+  const exists = filters.some(f => f.sourceId === w.sourceId && f.field === w.dimension && f.op === 'equals' && String(f.value) === String(label));
+  if (exists) return toast('That page filter is already active.');
+  filters.push({ id: uid('filter'), sourceId: w.sourceId, field: w.dimension, op: 'equals', value: String(label), value2: '' });
+  renderAll();
+  toast(`Filtered page to ${w.dimension} = ${label}`);
+}
+
+function aggregate(rows, w) {
+  const dim = w.dimension || columnsOf(w.sourceId)[0];
+  const measure = w.measureCol || columnsOf(w.sourceId)[0];
+  const groups = new Map();
+  rows.forEach(r => {
+    const key = dim === '__all__' ? 'All rows' : String(r[dim] ?? '');
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  });
+  const total = calcAgg(rows, measure, w.agg === 'percent of total' ? 'sum' : w.agg, w.countIf);
+  let out = Array.from(groups.entries()).map(([key, group]) => {
+    let value = calcAgg(group, measure, w.agg, w.countIf);
+    if (w.agg === 'percent of total') value = total ? (calcAgg(group, measure, 'sum', w.countIf) / total) * 100 : 0;
+    return { key, value };
+  });
+  const sortBy = w.sortBy || 'none';
+  if (sortBy === 'dimension') out.sort((a,b) => String(a.key).localeCompare(String(b.key)));
+  if (sortBy === 'measure') out.sort((a,b) => a.value - b.value);
+  if ((w.sortDir || 'desc') === 'desc') out.reverse();
+  const n = Number(w.topN || 0);
+  return out.slice(0, n > 0 ? n : 60);
+}
+function calcAgg(group, col, agg, countIf) {
+  if (agg === 'count') return group.length;
+  if (agg === 'countif') return group.filter(r => String(r[col]) === String(countIf)).length;
+  if (agg === 'count distinct') return new Set(group.map(r => r[col])).size;
+  if (agg === 'first') return group.length ? group[0][col] : '';
+  if (agg === 'last') return group.length ? group[group.length - 1][col] : '';
+  const nums = group.map(r => numberish(r[col])).filter(Number.isFinite).sort((a,b) => a-b);
+  if (!nums.length) return 0;
+  if (agg === 'sum' || agg === 'percent of total') return nums.reduce((a,b)=>a+b,0);
+  if (agg === 'average') return nums.reduce((a,b)=>a+b,0) / nums.length;
+  if (agg === 'median') { const mid = Math.floor(nums.length/2); return nums.length % 2 ? nums[mid] : (nums[mid-1] + nums[mid]) / 2; }
+  if (agg === 'min') return Math.min(...nums);
+  if (agg === 'max') return Math.max(...nums);
+  if (agg === 'range') return Math.max(...nums) - Math.min(...nums);
+  return 0;
+}
+function numberish(v) { if (typeof v === 'number') return v; const s = String(v ?? '').trim(); if (!s) return NaN; const n = Number(s.replace(/[$,%]/g,'').replace(/,/g,'')); return n; }
+function formatNumber(n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
+function renderInspector() {
+  const w = selectedWidget();
+  $('inspectorEmpty').style.display = w ? 'none' : 'block'; $('inspector').style.display = w ? 'block' : 'none';
+  if (!w) return;
+  $('wTitle').value = w.title; $('wX').value = w.x; $('wY').value = w.y; $('wW').value = w.w; $('wH').value = w.h;
+  $('wType').value = w.type; $('wAgg').value = w.agg; if ($('wPivotColumn')) $('wPivotColumn').value = w.pivotColumn || ''; $('wCountIf').value = w.countIf || ''; $('wSortBy').value = w.sortBy || 'none'; $('wSortDir').value = w.sortDir || 'desc'; $('wTopN').value = w.topN || ''; $('wColors').value = (w.colors || []).join(','); $('wBg').value = rgbToHex(w.bg || '#ffffff'); $('wText').value = rgbToHex(w.text || '#0f172a');
+  $('wSource').innerHTML = state.sources.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join(''); $('wSource').value = w.sourceId || '';
+  refreshFieldSelectors(w);
+  renderWidgetFilterControls(w);
+  $('chartOptions').style.display = ['table','summary'].includes(w.type) ? 'none' : 'block';
+}
+function refreshFieldSelectors(w) {
+  const cols = columnsOf(w.sourceId);
+  const src = state.sources.find(s => s.id === w.sourceId);
+  const fields = src?.fields || cols.map(c => ({ name:c, type:'unknown', role:'dimension' }));
+  const dimOpts = fields.map(f => `<option value="${escapeAttr(f.name)}">${escapeHtml(f.name)} (${escapeHtml(f.type)})</option>`).join('');
+  const measureOpts = fields.map(f => `<option value="${escapeAttr(f.name)}">${escapeHtml(f.name)} (${escapeHtml(f.type)})</option>`).join('');
+  $('wDimension').innerHTML = dimOpts; $('wMeasureCol').innerHTML = measureOpts; if ($('wPivotColumn')) $('wPivotColumn').innerHTML = '<option value="">None</option>' + dimOpts;
+  $('wDimension').value = w.dimension || cols[0] || ''; if ($('wPivotColumn')) $('wPivotColumn').value = w.pivotColumn || ''; $('wMeasureCol').value = w.measureCol || cols[0] || '';
+  if ($('widgetFilterField')) $('widgetFilterField').innerHTML = dimOpts;
+}
+
+function renderFilterControls() {
+  if (!$('pageFilterSource')) return;
+  const p = activePage();
+  const selectedSource = $('pageFilterSource').value || selectedWidget()?.sourceId || state.sources[0]?.id || '';
+  $('pageFilterSource').innerHTML = state.sources.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  if (selectedSource) $('pageFilterSource').value = selectedSource;
+  const cols = columnsOf($('pageFilterSource').value);
+  $('pageFilterField').innerHTML = cols.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
+  const filters = p?.filters || [];
+  $('pageFilterList').innerHTML = filters.length ? filters.map(f => `<div class="filter-chip"><span>${escapeHtml(filterLabel(f))}</span><button data-remove-page-filter="${f.id}">×</button></div>`).join('') : '<p class="hint">No page filters.</p>';
+}
+function renderWidgetFilterControls(w) {
+  const list = $('widgetFilterList'); if (!list) return;
+  w.filters = w.filters || [];
+  list.innerHTML = w.filters.length ? w.filters.map(f => `<div class="filter-chip"><span>${escapeHtml(filterLabel(Object.assign({sourceId:w.sourceId}, f)))}</span><button data-remove-widget-filter="${f.id}">×</button></div>`).join('') : '<p class="hint">No widget filters.</p>';
+}
+function renderFields() {
+  const sourceId = selectedWidget()?.sourceId || state.sources[0]?.id;
+  const src = state.sources.find(s => s.id === sourceId);
+  const fields = src?.fields || [];
+  $('fieldList').innerHTML = fields.length ? fields.map(f => `<span class="pill">${escapeHtml(f.name)} <span class="field-type">${escapeHtml(f.type)} · ${escapeHtml(f.role)}${f.calculated ? ' · calc' : ''}${f.possibleKey ? ' · key?' : ''}</span></span>`).join('') : 'No data loaded yet.';
+}
+function makeDraggable(el, w) {
+  const head = el.querySelector('.widget-head');
+  let start = null;
+  const canvas = $('canvas');
+  const onMove = e => {
+    if (!start) return;
+    e.preventDefault();
+    const dx = e.clientX - start.mx;
+    const dy = e.clientY - start.my;
+    w.x = Math.max(0, Math.round(start.x + dx));
+    w.y = Math.max(50, Math.round(start.y + dy));
+    el.style.left = `${w.x}px`;
+    el.style.top = `${w.y}px`;
+    if ($('wX')) $('wX').value = w.x;
+    if ($('wY')) $('wY').value = w.y;
+  };
+  const onUp = e => {
+    if (!start) return;
+    head.releasePointerCapture?.(start.pointerId);
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    el.classList.remove('dragging');
+    document.body.style.userSelect = '';
+    start = null;
+    queueAutosave();
+    commitHistory();
+  };
+  head.addEventListener('pointerdown', e => {
+    if (e.target.closest('button,input,select,textarea')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    selectWidget(w.id, false);
+    const canvasRect = canvas.getBoundingClientRect();
+    start = { pointerId:e.pointerId, mx:e.clientX, my:e.clientY, x:w.x, y:w.y, canvasLeft:canvasRect.left, canvasTop:canvasRect.top };
+    head.setPointerCapture?.(e.pointerId);
+    el.classList.add('dragging');
+    document.body.style.userSelect='none';
+    window.addEventListener('pointermove', onMove, { passive:false });
+    window.addEventListener('pointerup', onUp);
+  });
+}
+function escapeHtml(v) { return String(v ?? '').replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function escapeAttr(v) { return escapeHtml(v).replace(/'/g, '&#39;'); }
+function rgbToHex(v) { if (!v || v[0] === '#') return v || '#ffffff'; return '#ffffff'; }
+
+
+function cleanProjectForSave() {
+  const copy = JSON.parse(JSON.stringify(state));
+  copy.appVersion = APP_VERSION;
+  copy.schemaVersion = 3;
+  copy.updatedAt = new Date().toISOString();
+  copy.sources?.forEach(src => { delete src._calcSig; });
+  return copy;
+}
+function commitHistory() {
+  if (restoringHistory) return;
+  const snapshot = JSON.stringify(cleanProjectForSave());
+  if (historyStack[historyStack.length - 1] === snapshot) return;
+  historyStack.push(snapshot);
+  if (historyStack.length > 80) historyStack.shift();
+  redoStack = [];
+  updateHistoryButtons();
+}
+function restoreSnapshot(snapshot) {
+  if (!snapshot) return;
+  restoringHistory = true;
+  const loaded = JSON.parse(snapshot);
+  upgradeProject(loaded);
+  Object.assign(state, loaded);
+  state.selectedWidgetId = null;
+  restoringHistory = false;
+  renderAll();
+}
+function undo() {
+  if (historyStack.length < 2) return toast('Nothing to undo.');
+  const current = historyStack.pop();
+  redoStack.push(current);
+  restoreSnapshot(historyStack[historyStack.length - 1]);
+  toast('Undo');
+}
+function redo() {
+  const snapshot = redoStack.pop();
+  if (!snapshot) return toast('Nothing to redo.');
+  historyStack.push(snapshot);
+  restoreSnapshot(snapshot);
+  toast('Redo');
+}
+function updateHistoryButtons() {
+  if ($('undoBtn')) $('undoBtn').disabled = historyStack.length < 2;
+  if ($('redoBtn')) $('redoBtn').disabled = redoStack.length < 1;
+}
+function downloadText(filename, text, type='text/plain') {
+  const blob = new Blob([text], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+}
+
+function encodeB64Unicode(str) {
+  return btoa(Array.prototype.map.call(encodeURIComponent(str), ch => '%' === ch ? '' : '').join(''));
+}
+function toBase64Unicode(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+function exportMobileViewerHtml() {
+  const template = $('databenchViewerTemplate')?.innerHTML;
+  if (!template) return toast('Mobile viewer template is missing.');
+  const project = cleanProjectForSave();
+  project.viewer = Object.assign({ defaultMode:'responsive', allowFilters:true, mobileLayout:'stacked', pageNavigation:'tabs', viewerPath:'./viewer/', editorPath:'../' }, project.viewer || {});
+  const json = JSON.stringify(project);
+  const b64 = toBase64Unicode(json);
+  const html = template.replace('__DATABENCH_PROJECT_B64__', b64).replace('<title>DataBench Viewer</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
+  downloadText(`${safeFileName(project.projectName || 'databench')}.databench.viewer.html`, html, 'text/html');
+  toast('Mobile viewer HTML exported.');
+}
+function exportCurrentPageHtml() {
+  const page = activePage(); if (!page) return toast('No page selected.');
+  const clone = $('canvas').cloneNode(true);
+  clone.querySelectorAll('canvas').forEach(cv => {
+    try { const img = document.createElement('img'); img.src = cv.toDataURL('image/png'); img.style.width = '100%'; img.style.height = '100%'; cv.replaceWith(img); } catch(err) {}
+  });
+  clone.querySelectorAll('button,input').forEach(el => {
+    if (el.tagName === 'INPUT') { const span = document.createElement('span'); span.textContent = el.value; span.style.font = '700 1.1rem sans-serif'; el.replaceWith(span); }
+    else el.remove();
+  });
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(page.title)}</title><style>body{margin:0;background:#111827;font-family:system-ui,sans-serif}.canvas{position:relative;width:1200px;min-height:850px;margin:24px auto;background:${state.theme.canvas};background-image:linear-gradient(var(--grid,rgba(15,23,42,.06)) 1px,transparent 1px),linear-gradient(90deg,var(--grid,rgba(15,23,42,.06)) 1px,transparent 1px);background-size:24px 24px;border-radius:18px;overflow:auto}.widget{position:absolute;border:1px solid rgba(15,23,42,.15);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.15);overflow:auto}.widget-head{padding:10px 12px;border-bottom:1px solid rgba(15,23,42,.12);font-weight:800}.widget-body{height:calc(100% - 45px);padding:12px;overflow:auto}.data-table{border-collapse:collapse;width:100%;font-size:12px}.data-table th,.data-table td{border:1px solid #ddd;padding:6px;text-align:left}.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.summary-card{border:1px solid #ddd;border-radius:10px;padding:10px;background:rgba(255,255,255,.7)}</style></head><body>${clone.outerHTML}</body></html>`;
+  downloadText(`${safeFileName(page.title)}.html`, html, 'text/html');
+}
+async function canvasScreenshot(pageId=null) {
+  const originalPageId = state.activePageId;
+  const originalSelectedId = state.selectedWidgetId;
+  if (pageId) { state.activePageId = pageId; state.selectedWidgetId = null; renderPages(); renderCanvas(); queueAutosave(); }
+  await new Promise(r => requestAnimationFrame(() => setTimeout(r, 120)));
+  const canvasEl = $('canvas');
+  const width = Math.max(1200, canvasEl.scrollWidth || canvasEl.offsetWidth);
+  const height = Math.max(900, canvasEl.scrollHeight || canvasEl.offsetHeight);
+  if (!window.html2canvas) throw new Error('html2canvas not loaded');
+  const shot = await html2canvas(canvasEl, { backgroundColor: state.theme.canvas || '#ffffff', scale: 2, width, height, windowWidth: width, windowHeight: height, useCORS: true });
+  if (pageId) { state.activePageId = originalPageId; state.selectedWidgetId = originalSelectedId; renderPages(); renderCanvas(); renderInspector(); queueAutosave(); }
+  return { dataUrl: shot.toDataURL('image/png'), width: shot.width, height: shot.height, pageWidth: width, pageHeight: height };
+}
+async function exportCurrentPagePng() {
+  const page = activePage(); if (!page) return toast('No page selected.');
+  try {
+    const shot = await canvasScreenshot();
+    const a=document.createElement('a'); a.download=`${safeFileName(page.title)}.png`; a.href=shot.dataUrl; a.click();
+  } catch(err) { console.error(err); toast('PNG export failed. Try Export HTML instead.'); }
+}
+async function exportProjectPdf() {
+  if (!state.pages.length) return toast('Create at least one page before exporting PDF.');
+  if (!window.jspdf?.jsPDF) return toast('PDF library did not load. Check your internet connection.');
+  try {
+    toast('Preparing PDF export...');
+    const { jsPDF } = window.jspdf;
+    let pdf = null;
+    for (let i=0; i<state.pages.length; i++) {
+      const page = state.pages[i];
+      const shot = await canvasScreenshot(page.id);
+      const format = [shot.pageWidth, shot.pageHeight];
+      if (!pdf) pdf = new jsPDF({ orientation: shot.pageWidth >= shot.pageHeight ? 'landscape' : 'portrait', unit:'px', format });
+      else pdf.addPage(format, shot.pageWidth >= shot.pageHeight ? 'landscape' : 'portrait');
+      pdf.addImage(shot.dataUrl, 'PNG', 0, 0, shot.pageWidth, shot.pageHeight);
+    }
+    pdf.save(`${safeFileName(state.projectName || 'databench_project')}.pdf`);
+    toast('PDF exported.');
+  } catch(err) { console.error(err); toast('PDF export failed. Try exporting HTML or PNG.'); }
+}
+async function exportProjectPptx() {
+  if (!state.pages.length) return toast('Create at least one page before exporting PPTX.');
+  const PptxCtor = window.PptxGenJS || window.pptxgen;
+  if (!PptxCtor) return toast('PPTX library did not load. Check your internet connection.');
+  try {
+    toast('Preparing PPTX export...');
+    const pptx = new PptxCtor();
+    pptx.layout = 'LAYOUT_WIDE';
+    pptx.author = 'DataBench';
+    pptx.company = 'DataBench';
+    pptx.subject = state.projectName || 'DataBench Project';
+    pptx.title = state.projectName || 'DataBench Project';
+    const slideW = 13.333, slideH = 7.5;
+    for (const page of state.pages) {
+      const shot = await canvasScreenshot(page.id);
+      const slide = pptx.addSlide();
+      slide.background = { color: (state.theme.canvas || '#ffffff').replace('#','') };
+      slide.addText(page.title || 'DataBench Page', { x:0.25, y:0.1, w:12.8, h:0.28, fontSize:10, bold:true, color:(state.theme.text || '#111827').replace('#','') });
+      const imgW = slideW;
+      const imgH = Math.min(slideH - 0.42, imgW * (shot.pageHeight / shot.pageWidth));
+      const y = 0.42 + Math.max(0, (slideH - 0.42 - imgH) / 2);
+      slide.addImage({ data: shot.dataUrl, x:0, y, w:imgW, h:imgH });
+    }
+    await pptx.writeFile({ fileName: `${safeFileName(state.projectName || 'databench_project')}.pptx` });
+    toast('PPTX exported.');
+  } catch(err) { console.error(err); toast('PPTX export failed. Try exporting PDF or PNG.'); }
+}
+function exportSelectedDataCsv() {
+  const w = selectedWidget(); const srcId = w?.sourceId || state.sources[0]?.id; const src = state.sources.find(s => s.id === srcId);
+  if (!src) return toast('No data source selected.');
+  const rows = w ? filteredRowsForWidget(w) : rowsOf(src.id);
+  const cols = columnsOf(src.id);
+  const csv = [cols.join(',')].concat(rows.map(r => cols.map(c => csvCell(r[c])).join(','))).join('\n');
+  downloadText(`${safeFileName(src.name)}.csv`, csv, 'text/csv');
+}
+function csvCell(v) { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
+function safeFileName(name) { return String(name || 'databench').replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g,'').toLowerCase() || 'databench'; }
+function applyTemplate() {
+  const src = state.sources[0]; if (!src) return toast('Load a dataset first.');
+  const fields = src.fields || inferFields(src.rows, src.columns);
+  const dims = fields.filter(f => f.role === 'dimension').map(f => f.name);
+  const nums = fields.filter(f => f.type === 'number').map(f => f.name);
+  const dates = fields.filter(f => f.type === 'date').map(f => f.name);
+  const dim1 = dims.find(d => !/id$/i.test(d)) || dims[0] || src.columns[0];
+  const dim2 = dims.find(d => d !== dim1 && !/id$/i.test(d)) || dims[1] || dim1;
+  const measure = nums[0] || src.columns[0];
+  const type = $('templateSelect')?.value || 'sales';
+  const p = { id: uid('page'), title: `${type[0].toUpperCase()+type.slice(1)} Template`, filters: [], widgets: [] };
+  p.widgets.push(defaultWidget({ type:'kpi', title:`Total ${measure}`, sourceId:src.id, dimension:'__all__', measureCol:measure, agg:'sum', x:28, y:72, w:280, h:170 }));
+  p.widgets.push(defaultWidget({ type:type === 'survey' ? 'donut' : 'bar', title:`${measure} by ${dim1}`, sourceId:src.id, dimension:dim1, measureCol:measure, agg:type === 'survey' ? 'count' : 'sum', x:340, y:72, w:520, h:300, topN:10 }));
+  p.widgets.push(defaultWidget({ type:'horizontalBar', title:`Top ${dim2}`, sourceId:src.id, dimension:dim2, measureCol:measure, agg:type === 'survey' ? 'count' : 'sum', x:28, y:400, w:520, h:330, topN:10 }));
+  p.widgets.push(defaultWidget({ type:'pivot', title:`Pivot: ${dim1} × ${dim2}`, sourceId:src.id, dimension:dim1, pivotColumn:dim2, measureCol:measure, agg:type === 'survey' ? 'count' : 'sum', x:580, y:400, w:560, h:330 }));
+  if (dates[0]) p.widgets.push(defaultWidget({ type:'line', title:`${measure} over ${dates[0]}`, sourceId:src.id, dimension:dates[0], measureCol:measure, agg:'sum', x:890, y:72, w:250, h:300, topN:30, sortBy:'dimension', sortDir:'asc' }));
+  state.pages.push(p); state.activePageId = p.id; state.selectedWidgetId = null; renderAll(); toast('Template page created.');
+}
+
+function setAutosaveStatus(msg, mode='normal') {
+  const el = $('autosaveStatus');
+  if (!el) return;
+  const textEl = $('autosaveStatusText');
+  if (textEl) textEl.textContent = msg;
+  else el.textContent = msg;
+  el.dataset.mode = mode;
+  el.title = mode === 'saved'
+    ? 'Autosave is up to date'
+    : mode === 'error'
+      ? 'Autosave failed. Save JSON manually.'
+      : 'Autosave has pending changes';
+}
+function autosavePayload() {
+  state.appVersion = APP_VERSION;
+  return JSON.stringify(cleanProjectForSave());
+}
+function flushAutosave(reason='auto') {
+  if (!autosaveReady && reason !== 'initial') return false;
+  try {
+    const payload = autosavePayload();
+    localStorage.setItem(AUTOSAVE_KEY, payload);
+    // Keep one explicit backup slot so a bad browser refresh is easier to recover from.
+    localStorage.setItem('databench_autosave_backup', payload);
+    lastAutosaveAt = new Date();
+    autosaveDirty = false;
+    setAutosaveStatus(`Autosaved ${lastAutosaveAt.toLocaleTimeString([], {hour:'numeric', minute:'2-digit', second:'2-digit'})}`, 'saved');
+    return true;
+  } catch(err) {
+    setAutosaveStatus('Autosave failed — save JSON manually', 'error');
+    return false;
+  }
+}
+function queueAutosave() {
+  if (!autosaveReady) return;
+  autosaveDirty = true;
+  setAutosaveStatus('Unsaved changes…', 'dirty');
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => flushAutosave('debounced'), 500);
+}
+function findAutosaveRaw() {
+  const keys = [AUTOSAVE_KEY, 'databench_autosave_backup', ...(Array.isArray(AUTOSAVE_LEGACY_KEYS) ? AUTOSAVE_LEGACY_KEYS : [])];
+  for (const key of keys) {
+    const raw = localStorage.getItem(key);
+    if (raw) return { key, raw };
+  }
+  return null;
+}
+function restoreAutosave() {
+  const found = findAutosaveRaw();
+  if (!found) return toast('No autosaved project found.');
+  try {
+    const loaded = JSON.parse(found.raw);
+    upgradeProject(loaded);
+    Object.assign(state, loaded);
+    state.selectedWidgetId = null;
+    renderAll();
+    flushAutosave('restore');
+    toast('Autosaved project restored.');
+  }
+  catch(err) { toast('Autosave could not be restored.'); }
+}
+function upgradeProject(project) {
+  project.appVersion = project.appVersion || '0.1.0';
+  project.schemaVersion = Math.max(project.schemaVersion || 1, 2);
+  project.createdAt = project.createdAt || new Date().toISOString();
+  project.updatedAt = project.updatedAt || new Date().toISOString();
+  project.theme = normalizeTheme(project.theme || defaultTheme('dark'));
+  project.sources = project.sources || [];
+  project.pages = project.pages || [];
+  project.globalFilters = project.globalFilters || [];
+  project.relationships = project.relationships || [];
+  project.sources.forEach(src => { src.calculatedFields = src.calculatedFields || []; src.columns = src.columns || Array.from(new Set((src.rows||[]).flatMap(r => Object.keys(r)))); src.rows = normalizeRows(src.rows || []); applyCalculatedFields(src); src.fields = inferFields(src.rows, src.columns).map(f => { const calc = src.calculatedFields.find(c => c.name === f.name); return calc ? Object.assign(f, { calculated:true, formula:calc.formula }) : f; }); src.profile = profileSource(src.rows, src.columns, src.fields); });
+  project.pages.forEach(p => { p.filters = p.filters || []; (p.widgets||[]).forEach(w => { if (!w.sortBy) w.sortBy = 'measure'; if (!w.sortDir) w.sortDir = 'desc'; if (w.topN == null) w.topN = 0; if (w.pivotColumn == null) w.pivotColumn = ''; w.filters = w.filters || []; }); });
+}
+function loadSampleProject() {
+  if (state.sources.length && !confirm('Replace current project with a sample project?')) return;
+  state.projectName = 'Sample Sales Dashboard';
+  state.createdAt = new Date().toISOString(); state.updatedAt = new Date().toISOString(); state.schemaVersion = 2; state.appVersion = APP_VERSION;
+  state.sources = []; state.pages = []; state.activePageId = null; state.selectedWidgetId = null; state.globalFilters = []; state.relationships = []; state.theme = defaultTheme('dark');
+  const sales = [
+    ['OrderID','Date','Region','Category','Product','CustomerID','Units','Revenue','Cost'],
+    ['1001','2026-01-04','North','Tools','Cordless Drill','C001',3,447,270], ['1002','2026-01-11','South','Craft','Vinyl Cutter','C002',1,299,180],
+    ['1003','2026-02-02','East','Electronics','Microcontroller Kit','C003',8,360,160], ['1004','2026-02-18','West','Tools','3D Printer Nozzle','C004',12,144,48],
+    ['1005','2026-03-03','North','Repair','Soldering Station','C005',2,190,110], ['1006','2026-03-21','South','Craft','Laser Plywood','C002',10,250,140],
+    ['1007','2026-04-08','East','Tools','Cordless Drill','C006',2,298,180], ['1008','2026-04-19','West','Electronics','Sensor Pack','C007',6,210,72],
+    ['1009','2026-05-06','North','Repair','Multimeter','C008',4,140,64], ['1010','2026-05-22','South','Tools','Clamp Set','C009',5,175,75],
+    ['1011','2026-06-01','East','Craft','Vinyl Cutter','C010',1,299,180], ['1012','2026-06-15','West','Electronics','Microcontroller Kit','C011',5,225,100]
+  ];
+  const customers = [
+    ['CustomerID','CustomerName','MemberLevel'], ['C001','Avery Stone','Pro'], ['C002','Mika Brooks','Community'], ['C003','Sam Rivera','Student'], ['C004','Jordan Lee','Community'], ['C005','Taylor Chen','Pro'], ['C006','Morgan Gray','Community'], ['C007','Riley Fox','Student'], ['C008','Casey Patel','Pro'], ['C009','Jamie Ward','Community'], ['C010','Quinn Moss','Student'], ['C011','Alex Kim','Community']
+  ];
+  addSource('Sample Sales.csv', rowsFromArray(sales), 'sample');
+  addSource('Sample Customers.csv', rowsFromArray(customers), 'sample');
+  const customerSrc = state.sources.find(s => s.name === 'Sample Customers.csv');
+  const salesSrc = state.sources.find(s => s.name === 'Sample Sales.csv');
+  if (salesSrc && customerSrc) state.relationships.push({ id: uid('rel'), leftId: salesSrc.id, rightId: customerSrc.id, key: 'CustomerID', joinType: 'left', name: 'Sales to Customers' });
+  if (salesSrc) { salesSrc.calculatedFields.push({ name:'Profit', formula:'Revenue - Cost' }, { name:'MarginPct', formula:'round((Revenue - Cost) / Revenue * 100, 1)' }, { name:'OrderYear', formula:'year(Date)' }); salesSrc._calcSig = null; applyCalculatedFields(salesSrc); }
+  const dashboard = { id: uid('page'), title: 'Sample Dashboard', widgets: [] };
+  const src = salesSrc;
+  dashboard.widgets.push(defaultWidget({ type:'bar', title:'Revenue by Category', sourceId:src.id, dimension:'Category', measureCol:'Revenue', agg:'sum', x:28, y:72, w:520, h:300, topN:5 }));
+  dashboard.widgets.push(defaultWidget({ type:'donut', title:'Orders by Region', sourceId:src.id, dimension:'Region', measureCol:'OrderID', agg:'count', x:580, y:72, w:420, h:300 }));
+  dashboard.widgets.push(defaultWidget({ type:'horizontalBar', title:'Units by Product', sourceId:src.id, dimension:'Product', measureCol:'Units', agg:'sum', x:28, y:410, w:620, h:320, topN:8 }));
+  dashboard.widgets.push(defaultWidget({ type:'kpi', title:'Total Revenue', sourceId:src.id, dimension:'__all__', measureCol:'Revenue', agg:'sum', x:690, y:430, w:310, h:190 }));
+  dashboard.widgets.push(defaultWidget({ type:'pivot', title:'Revenue Pivot', sourceId:src.id, dimension:'Region', pivotColumn:'Category', measureCol:'Revenue', agg:'sum', x:28, y:760, w:970, h:300 }));
+  state.pages.push(dashboard); state.activePageId = dashboard.id; renderAll(); toast('Sample project loaded.');
+}
+function rowsFromArray(arr) {
+  const cols = arr[0];
+  return arr.slice(1).map(row => Object.fromEntries(cols.map((c,i) => [c, row[i] ?? ''])));
+}
+
+function loadPanelPrefs() {
+  try { return JSON.parse(localStorage.getItem(PANEL_PREF_KEY) || '{}'); }
+  catch(err) { return {}; }
+}
+function savePanelPrefs() {
+  const app = document.querySelector('.app');
+  if (!app) return;
+  localStorage.setItem(PANEL_PREF_KEY, JSON.stringify({
+    leftCollapsed: app.classList.contains('left-collapsed'),
+    rightCollapsed: app.classList.contains('right-collapsed')
+  }));
+}
+function syncPanelToggleLabels() {
+  const app = document.querySelector('.app');
+  const leftCollapsed = app?.classList.contains('left-collapsed');
+  const rightCollapsed = app?.classList.contains('right-collapsed');
+  const leftBtn = $('toggleLeftPanel');
+  const rightBtn = $('toggleRightPanel');
+  if (leftBtn) {
+    leftBtn.textContent = leftCollapsed ? 'Open left menu ▶' : '◀ Collapse left menu';
+    leftBtn.title = leftCollapsed ? 'Open left menu' : 'Collapse left menu';
+    leftBtn.setAttribute('aria-expanded', String(!leftCollapsed));
+  }
+  if (rightBtn) {
+    rightBtn.textContent = rightCollapsed ? '◀ Open right menu' : 'Collapse right menu ▶';
+    rightBtn.title = rightCollapsed ? 'Open right menu' : 'Collapse right menu';
+    rightBtn.setAttribute('aria-expanded', String(!rightCollapsed));
+  }
+}
+function initCollapsiblePanels() {
+  const app = document.querySelector('.app');
+  if (!app) return;
+  const prefs = loadPanelPrefs();
+  app.classList.toggle('left-collapsed', !!prefs.leftCollapsed);
+  app.classList.toggle('right-collapsed', !!prefs.rightCollapsed);
+  syncPanelToggleLabels();
+  $('toggleLeftPanel')?.addEventListener('click', () => {
+    app.classList.toggle('left-collapsed');
+    syncPanelToggleLabels();
+    savePanelPrefs();
+  });
+  $('toggleRightPanel')?.addEventListener('click', () => {
+    app.classList.toggle('right-collapsed');
+    syncPanelToggleLabels();
+    savePanelPrefs();
+  });
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
+      e.preventDefault(); app.classList.toggle('left-collapsed'); syncPanelToggleLabels(); savePanelPrefs();
+    }
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'r') {
+      e.preventDefault(); app.classList.toggle('right-collapsed'); syncPanelToggleLabels(); savePanelPrefs();
+    }
+  });
+}
+initCollapsiblePanels();
+
+function initPolishTabs() {
+  const prefs = (() => { try { return JSON.parse(localStorage.getItem(WORKFLOW_PREF_KEY) || '{}'); } catch(err) { return {}; } })();
+  const makeTabs = (panelSelector, groups, defaultKey, storageKey) => {
+    const panel = document.querySelector(panelSelector + ' .panel-content');
+    if (!panel || panel.querySelector('.workflow-tabs, .inspector-tabs')) return;
+    const sections = Array.from(panel.querySelectorAll(':scope > .section'));
+    const tabBar = document.createElement('div');
+    tabBar.className = panelSelector.includes('right') ? 'inspector-tabs' : 'workflow-tabs';
+    tabBar.innerHTML = groups.map(g => `<button type="button" data-tab-key="${g.key}">${g.label}</button>`).join('');
+    panel.prepend(tabBar);
+    const sectionGroup = section => {
+      const heading = section.querySelector('h2')?.textContent.trim().toLowerCase() || '';
+      if (/data sources/.test(heading)) return 'data';
+      if (/templates|pages & widgets/.test(heading)) return 'build';
+      if (/calculated fields|data model/.test(heading)) return 'model';
+      if (/theme studio/.test(heading)) return 'style';
+      if (/page filters/.test(heading)) return 'filters';
+      if (/selected widget/.test(heading)) return 'configure';
+      if (/fields/.test(heading)) return 'fields';
+      if (/function library/.test(heading)) return 'help';
+      return defaultKey;
+    };
+    const show = key => {
+      sections.forEach(section => section.classList.toggle('hidden-by-tab', sectionGroup(section) !== key));
+      tabBar.querySelectorAll('button').forEach(btn => btn.classList.toggle('active', btn.dataset.tabKey === key));
+      prefs[storageKey] = key;
+      localStorage.setItem(WORKFLOW_PREF_KEY, JSON.stringify(prefs));
+    };
+    tabBar.addEventListener('click', e => {
+      const key = e.target.dataset?.tabKey;
+      if (key) show(key);
+    });
+    show(prefs[storageKey] || defaultKey);
+  };
+  makeTabs('aside.left-panel', [
+    {key:'data', label:'Data'},
+    {key:'build', label:'Build'},
+    {key:'model', label:'Model'},
+    {key:'style', label:'Style'},
+    {key:'filters', label:'Filters'}
+  ], 'data', 'leftTab');
+  makeTabs('aside.right-panel', [
+    {key:'configure', label:'Configure'},
+    {key:'fields', label:'Fields'},
+    {key:'help', label:'Functions'}
+  ], 'configure', 'rightTab');
+}
+initPolishTabs();
+
+
+$('fileInput').addEventListener('change', async e => {
+  for (const file of e.target.files) {
+    try { addSource(file.name, await parseFile(file)); toast(`Loaded ${file.name}`); }
+    catch(err) { console.error(err); toast(`Could not load ${file.name}`); }
+  }
+  e.target.value = '';
+});
+$('loadSheetBtn').addEventListener('click', async () => {
+  const url = $('sheetUrl').value.trim(); if (!url) return toast('Paste a Google Sheets CSV link first.');
+  try { const text = await fetch(url).then(r => { if(!r.ok) throw new Error(r.status); return r.text(); }); addSource('Google Sheet CSV', parseCSV(text), 'google-sheet'); }
+  catch(err) { toast('Could not fetch sheet. Make sure it is a published CSV URL.'); }
+});
+$('saveRelationshipBtn').addEventListener('click', () => {
+  const rel = currentRelationshipFromControls();
+  if (!rel.leftId || !rel.rightId || !rel.key || rel.leftId === rel.rightId) return toast('Choose two different tables with a matching key field.');
+  state.relationships = state.relationships || [];
+  const exists = state.relationships.some(r => r.leftId === rel.leftId && r.rightId === rel.rightId && r.key === rel.key && r.joinType === rel.joinType);
+  if (exists) return toast('That relationship is already saved.');
+  rel.name = rel.name || `${sourceName(rel.leftId)} → ${sourceName(rel.rightId)}`;
+  state.relationships.push(rel);
+  renderAll();
+  toast('Relationship saved.');
+});
+$('createJoinBtn').addEventListener('click', () => {
+  const rel = currentRelationshipFromControls();
+  if (rel.leftId === rel.rightId) return toast('Choose two different tables.');
+  createJoinedSource(rel);
+});
+$('joinLeft').addEventListener('change', refreshJoinKeys); $('joinRight').addEventListener('change', refreshJoinKeys);
+$('joinKey').addEventListener('change', updateJoinDiagnostics); $('joinType').addEventListener('change', updateJoinDiagnostics);
+$('addPageBtn').addEventListener('click', addPage); document.addEventListener('click', e => { if (e.target.id === 'miniAddPage') addPage(); });
+function addPage() { const p = { id: uid('page'), title: `Page ${state.pages.length+1}`, widgets: [] }; state.pages.push(p); state.activePageId = p.id; state.selectedWidgetId = null; renderAll(); }
+$('addTableBtn').addEventListener('click', () => addWidget('table')); $('addChartBtn').addEventListener('click', () => addWidget('bar')); $('addSummaryBtn').addEventListener('click', () => addWidget('summary')); $('addPivotBtn')?.addEventListener('click', () => addWidget('pivot'));
+function addWidget(type) { const p = activePage() || (addPage(), activePage()); const title = type === 'table' ? 'Data Table' : type === 'summary' ? 'Data Summary' : type === 'pivot' ? 'Pivot Table' : 'Analysis Chart'; const w = defaultWidget({ type, title }); p.widgets.push(w); state.selectedWidgetId = w.id; renderAll(); }
+function duplicateWidget(id=state.selectedWidgetId) {
+  const p = activePage();
+  const w = p?.widgets.find(x => x.id === id);
+  if (!p || !w) return;
+  const copy = JSON.parse(JSON.stringify(w));
+  copy.id = uid('w');
+  copy.title = `${w.title} copy`;
+  copy.x = Number(w.x || 0) + 30;
+  copy.y = Number(w.y || 0) + 30;
+  p.widgets.push(copy);
+  state.selectedWidgetId = copy.id;
+  hideWidgetContextMenu();
+  renderAll();
+  commitHistory();
+}
+function deleteWidget(id=state.selectedWidgetId) {
+  const p = activePage();
+  if (!p || !id) return;
+  const before = p.widgets.length;
+  p.widgets = p.widgets.filter(x => x.id !== id);
+  if (p.widgets.length === before) return;
+  state.selectedWidgetId = null;
+  hideWidgetContextMenu();
+  renderAll();
+  commitHistory();
+}
+function moveWidgetLayer(id, direction) {
+  const p = activePage();
+  if (!p || !id) return;
+  const idx = p.widgets.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  const [w] = p.widgets.splice(idx, 1);
+  if (direction === 'front') p.widgets.push(w);
+  else p.widgets.unshift(w);
+  state.selectedWidgetId = id;
+  hideWidgetContextMenu();
+  renderAll();
+  commitHistory();
+}
+function showWidgetContextMenu(x, y, id) {
+  const menu = $('widgetContextMenu');
+  if (!menu) return;
+  menu.dataset.widgetId = id;
+  menu.innerHTML = `
+    <button type="button" data-context-action="edit">Edit settings</button>
+    <button type="button" data-context-action="duplicate">Duplicate</button>
+    <button type="button" data-context-action="front">Bring to front</button>
+    <button type="button" data-context-action="back">Send to back</button>
+    <button type="button" class="danger" data-context-action="delete">Delete chart/widget</button>`;
+  menu.style.display = 'block';
+  menu.setAttribute('aria-hidden', 'false');
+  const rect = menu.getBoundingClientRect();
+  menu.style.left = `${Math.min(x, window.innerWidth - rect.width - 12)}px`;
+  menu.style.top = `${Math.min(y, window.innerHeight - rect.height - 12)}px`;
+}
+function hideWidgetContextMenu() {
+  const menu = $('widgetContextMenu');
+  if (!menu) return;
+  menu.style.display = 'none';
+  menu.setAttribute('aria-hidden', 'true');
+}
+$('duplicateWidgetBtn').addEventListener('click', () => duplicateWidget());
+$('deleteWidgetBtn').addEventListener('click', () => deleteWidget());
+document.addEventListener('click', e => {
+  const contextAction = e.target.dataset?.contextAction;
+  if (contextAction) {
+    const id = $('widgetContextMenu')?.dataset.widgetId || state.selectedWidgetId;
+    if (contextAction === 'edit') openWidgetEditor(id);
+    if (contextAction === 'duplicate') duplicateWidget(id);
+    if (contextAction === 'front') moveWidgetLayer(id, 'front');
+    if (contextAction === 'back') moveWidgetLayer(id, 'back');
+    if (contextAction === 'delete') deleteWidget(id);
+    return;
+  }
+  if (!e.target.closest('#widgetContextMenu')) hideWidgetContextMenu();
+  const editWid = e.target.dataset?.editWidget; if (editWid) { e.preventDefault(); e.stopPropagation(); openWidgetEditor(editWid); return; }
+  if (e.target.id === 'renamePageBtn') {
+    e.preventDefault();
+    e.stopPropagation();
+    const page = activePage();
+    const input = $('pageTitleInput');
+    if (!page || !input) return;
+    const current = String(input.value || page.title || '').trim();
+    const next = prompt('Rename this page:', current);
+    if (next === null) return;
+    const clean = next.trim();
+    if (!clean) { toast('Page name cannot be blank.'); input.focus(); return; }
+    page.title = clean;
+    input.value = clean;
+    renderPages();
+    queueAutosave();
+    commitHistory();
+    toast('Page renamed.');
+    return;
+  }
+  const pageId = e.target.dataset?.page; if (pageId) { state.activePageId = pageId; state.selectedWidgetId = null; renderAll(); }
+  const wid = e.target.dataset?.select; if (wid) { openWidgetEditor(wid); }
+  const matRel = e.target.dataset?.materializeRel;
+  if (matRel) { const rel = (state.relationships || []).find(r => r.id === matRel); if (rel) createJoinedSource(rel); }
+  const delRel = e.target.dataset?.deleteRel;
+  if (delRel) { state.relationships = (state.relationships || []).filter(r => r.id !== delRel); renderAll(); }
+  const delCalc = e.target.dataset?.deleteCalc;
+  if (delCalc) { const src = state.sources.find(s => s.id === $('calcSource')?.value); if (src) { src.calculatedFields = (src.calculatedFields || []).filter(c => c.name !== delCalc); src.columns = src.columns.filter(c => c !== delCalc); src.rows.forEach(r => delete r[delCalc]); src._calcSig = null; src.fields = inferFields(src.rows, src.columns); src.profile = profileSource(src.rows, src.columns, src.fields); renderAll(); } }
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'pageTitleInput') {
+    const page = activePage();
+    if (!page) return;
+    page.title = e.target.value;
+    renderPages();
+    queueAutosave();
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.target.id === 'pageTitleInput' && e.key === 'Enter') {
+    e.preventDefault();
+    e.target.blur();
+    const page = activePage();
+    if (page) { page.title = e.target.value.trim() || page.title || 'Untitled page'; renderPages(); queueAutosave(); commitHistory(); toast('Page renamed.'); }
+  }
+});
+document.addEventListener('blur', e => {
+  if (e.target.id === 'pageTitleInput') {
+    const page = activePage();
+    if (!page) return;
+    const clean = e.target.value.trim() || page.title || 'Untitled page';
+    page.title = clean;
+    e.target.value = clean;
+    renderPages();
+    queueAutosave();
+  }
+}, true);
+
+function readInspectorIntoWidget() {
+  const w = selectedWidget(); if (!w || !$('inspector') || $('inspector').style.display === 'none') return null;
+  Object.assign(w, {
+    title:$('wTitle').value,
+    x:+$('wX').value||0,
+    y:+$('wY').value||0,
+    w:+$('wW').value||360,
+    h:+$('wH').value||240,
+    sourceId:$('wSource').value,
+    type:$('wType').value,
+    dimension:$('wDimension').value,
+    pivotColumn:$('wPivotColumn')?.value || '',
+    measureCol:$('wMeasureCol').value,
+    agg:$('wAgg').value,
+    countIf:$('wCountIf').value,
+    sortBy:$('wSortBy').value,
+    sortDir:$('wSortDir').value,
+    topN:+$('wTopN').value||0,
+    colors:$('wColors').value.split(',').map(s=>s.trim()).filter(Boolean),
+    bg:$('wBg').value,
+    text:$('wText').value
+  });
+  return w;
+}
+function applyInspectorLive(full=false) {
+  if (isRendering) return;
+  const w = readInspectorIntoWidget(); if (!w) return;
+  const el = document.querySelector(`[data-widget="${CSS.escape(w.id)}"]`);
+  if (el) {
+    el.style.left = `${w.x}px`; el.style.top = `${w.y}px`; el.style.width = `${w.w}px`; el.style.height = `${w.h}px`;
+    el.style.background = w.bg || state.theme.card; el.style.color = w.text || '#0f172a';
+    const title = el.querySelector('.widget-head strong'); if (title) title.textContent = w.title;
+  }
+  if (full) renderAll(); else { renderWidgetContents(w); renderFields(); queueAutosave(); }
+}
+let inspectorTimer = null;
+function scheduleInspectorLiveApply() {
+  clearTimeout(inspectorTimer);
+  inspectorTimer = setTimeout(() => applyInspectorLive(false), 180);
+}
+['wTitle','wX','wY','wW','wH','wType','wDimension','wPivotColumn','wMeasureCol','wAgg','wCountIf','wSortBy','wSortDir','wTopN','wColors','wBg','wText'].forEach(id => $(id)?.addEventListener('input', scheduleInspectorLiveApply));
+['wType','wDimension','wPivotColumn','wMeasureCol','wAgg','wSortBy','wSortDir'].forEach(id => $(id)?.addEventListener('change', () => applyInspectorLive(false)));
+$('applyWidgetBtn').addEventListener('click', () => { readInspectorIntoWidget(); renderAll(); toast('Widget refreshed.'); });
+$('wSource').addEventListener('change', () => { const w=selectedWidget(); if (!w) return; w.sourceId=$('wSource').value; refreshFieldSelectors(w); renderFields(); applyInspectorLive(false); });
+['accentColor','accent2Color','bgColor','panelColor','panel2Color','textColor','mutedColor','canvasColor','cardColor','canvasGridColor'].forEach(id => $(id)?.addEventListener('input', () => { state.theme = normalizeTheme({ ...state.theme, preset:'custom', accent:$('accentColor').value, accent2:$('accent2Color').value, bg:$('bgColor').value, panel:$('panelColor').value, panel2:$('panel2Color').value, text:$('textColor').value, muted:$('mutedColor').value, canvas:$('canvasColor').value, card:$('cardColor').value, canvasGrid:$('canvasGridColor').value, border:colorToRgba($('textColor').value, .14) }); renderAll(); }));
+$('applyThemePresetBtn')?.addEventListener('click', () => setThemePreset($('themePresetSelect').value || 'dark'));
+$('saveJsonBtn').addEventListener('click', () => {
+  const project = cleanProjectForSave();
+  const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${safeFileName(project.projectName)}.json`; a.click(); URL.revokeObjectURL(a.href);
+});
+$('loadJsonInput').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  try { const loaded = JSON.parse(await file.text()); upgradeProject(loaded); Object.assign(state, loaded); state.selectedWidgetId = null; renderAll(); toast('Project loaded.'); }
+  catch(err) { toast('Could not load project JSON.'); }
+  e.target.value='';
+});
+$('newProjectBtn').addEventListener('click', () => { if (!confirm('Start a new empty project?')) return; state.appVersion=APP_VERSION; state.schemaVersion=3; state.projectName='Untitled DataBench Project'; state.createdAt=new Date().toISOString(); state.updatedAt=new Date().toISOString(); state.sources=[]; state.pages=[]; state.activePageId=null; state.selectedWidgetId=null; state.globalFilters=[]; state.relationships=[]; state.theme=defaultTheme('dark'); renderAll(); });
+$('restoreAutosaveBtn').addEventListener('click', restoreAutosave);
+$('restoreAutosaveBtn2').addEventListener('click', restoreAutosave);
+$('undoBtn')?.addEventListener('click', undo);
+$('redoBtn')?.addEventListener('click', redo);
+$('exportHtmlBtn')?.addEventListener('click', exportCurrentPageHtml);
+$('exportPngBtn')?.addEventListener('click', exportCurrentPagePng);
+$('exportPdfBtn')?.addEventListener('click', exportProjectPdf);
+$('exportPptBtn')?.addEventListener('click', exportProjectPptx);
+$('exportMobileViewerBtn')?.addEventListener('click', exportMobileViewerHtml);
+$('exportDataBtn')?.addEventListener('click', exportSelectedDataCsv);
+$('applyTemplateBtn')?.addEventListener('click', applyTemplate);
+$('sampleDataBtn').addEventListener('click', loadSampleProject);
+$('calcSource')?.addEventListener('change', renderCalcFieldList);
+$('addCalcFieldBtn')?.addEventListener('click', addCalculatedField);
+
+$('pageFilterSource').addEventListener('change', renderFilterControls);
+$('addPageFilterBtn').addEventListener('click', () => {
+  const p = activePage(); if (!p) return toast('Create or select a page first.');
+  p.filters = p.filters || [];
+  const f = { id: uid('filter'), sourceId: $('pageFilterSource').value, field: $('pageFilterField').value, op: $('pageFilterOp').value, value: $('pageFilterValue').value, value2: $('pageFilterValue2').value };
+  if (!f.sourceId || !f.field) return toast('Choose a source and field for the page filter.');
+  p.filters.push(f); $('pageFilterValue').value = ''; $('pageFilterValue2').value = ''; renderAll();
+});
+$('clearPageFiltersBtn').addEventListener('click', () => { const p = activePage(); if (!p) return; p.filters = []; renderAll(); });
+$('addWidgetFilterBtn').addEventListener('click', () => {
+  const w = selectedWidget(); if (!w) return toast('Select a widget first.');
+  w.filters = w.filters || [];
+  const f = { id: uid('filter'), field: $('widgetFilterField').value, op: $('widgetFilterOp').value, value: $('widgetFilterValue').value, value2: $('widgetFilterValue2').value };
+  if (!f.field) return toast('Choose a field for the widget filter.');
+  w.filters.push(f); $('widgetFilterValue').value = ''; $('widgetFilterValue2').value = ''; renderAll();
+});
+$('clearWidgetFiltersBtn').addEventListener('click', () => { const w = selectedWidget(); if (!w) return; w.filters = []; renderAll(); });
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideWidgetContextMenu(); });
+document.addEventListener('scroll', hideWidgetContextMenu, true);
+document.addEventListener('click', e => {
+  const pfid = e.target.dataset?.removePageFilter;
+  if (pfid) { const p = activePage(); p.filters = (p.filters || []).filter(f => f.id !== pfid); renderAll(); }
+  const wfid = e.target.dataset?.removeWidgetFilter;
+  if (wfid) { const w = selectedWidget(); if (w) { w.filters = (w.filters || []).filter(f => f.id !== wfid); renderAll(); } }
+});
+window.addEventListener('beforeunload', () => {
+  if (autosaveDirty) flushAutosave('beforeunload');
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && autosaveDirty) flushAutosave('visibilitychange');
+});
+setInterval(() => {
+  if (autosaveReady && autosaveDirty) flushAutosave('interval');
+}, 5000);
+
+renderAll();
+autosaveReady = true;
+const existingAutosave = findAutosaveRaw();
+if (existingAutosave) setAutosaveStatus('Autosave available — click Restore', 'saved');
+queueAutosave();
+</script>
+</body>
+</html>
