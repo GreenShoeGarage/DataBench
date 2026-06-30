@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DataBench v2.0.0</title>
+  <title>DataBench v2.0.1</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -518,6 +518,9 @@
       header { position: sticky; top: 0; }
     }
 
+    .hidden { display: none !important; }
+    body.command-open { overflow: hidden; }
+
     /* v1.9 home screen + command palette */
     .start-modal,.command-modal { position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; padding:1rem; background:rgba(2,6,23,.72); backdrop-filter:blur(14px); }
     .start-card,.command-card { width:min(920px,96vw); max-height:90vh; overflow:auto; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:26px; box-shadow:var(--shadow); }
@@ -549,7 +552,7 @@
       <div class="brand">
         <div class="logo"></div>
         <div>
-          <h1>DataBench <span class="version">v1.8.0</span></h1>
+          <h1>DataBench <span class="version">v2.0.1</span></h1>
           <p>Quick and dirty data visualization, analysis, themes, pivot tables, PDF/PPT exports, templates, calculated fields, relationships, filters, autosave, and JSON projects.</p>
         </div>
       </div>
@@ -886,7 +889,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DataBench Viewer v2.0.0</title>
+  <title>DataBench Viewer v2.0.1</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <style>
     :root{--bg:#0f172a;--panel:#111827;--panel2:#1f2937;--text:#e5e7eb;--muted:#94a3b8;--accent:#38bdf8;--accent2:#a78bfa;--on-accent:#07111f;--ok:#34d399;--danger:#fb7185;--border:rgba(255,255,255,.14);--canvas:#f8fafc;--card:#fff;--cardText:#0f172a;--grid:#e2e8f0;--shadow:0 16px 40px rgba(0,0,0,.24);--radius:18px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -914,7 +917,7 @@
 <script>
 window.DATABENCH_EMBEDDED_B64 = "__DATABENCH_PROJECT_B64__";
 window.DATABENCH_DEFAULT_PROJECT_URL = "";
-let project=null, activePageId=null, charts=new Map();const tableViewState={};const VIEWER_APP_VERSION='2.0.0';const PROJECT_SCHEMA_VERSION=8;const WIDGET_REGISTRY_VERSION=1;const WIDGET_REGISTRY={table:1,summary:1,pivot:1,kpi:1,bar:1,horizontalBar:1,line:1,pie:1,donut:1,scatter:1,text:1};function normalizeViewerWidget(w){if(!w||!w.type)return w;if(!WIDGET_REGISTRY[w.type]){w.unsupported=true;return w;}w.filters=w.filters||[];w.registryVersion=w.registryVersion||WIDGET_REGISTRY_VERSION;if(w.w==null)w.w=420;if(w.h==null)w.h=300;if(w.x==null)w.x=24;if(w.y==null)w.y=80;if(w.type==='text'&&w.content==null)w.content=w.title||'';return w;}function migrateViewerProject(p){if(!p||typeof p!=='object')p={};const from=Number(p.schemaVersion||1);p.projectType=p.projectType||'databench-project';p.schemaVersion=PROJECT_SCHEMA_VERSION;p.viewer=Object.assign({defaultMode:'responsive',allowFilters:true,mobileLayout:'stacked',pageNavigation:'tabs',schemaVersion:PROJECT_SCHEMA_VERSION},p.viewer||{});p.architecture=Object.assign({engine:'DataBench viewer runtime',widgetRegistryVersion:WIDGET_REGISTRY_VERSION,schemaVersion:PROJECT_SCHEMA_VERSION},p.architecture||{});p.migrations=Array.isArray(p.migrations)?p.migrations:[];if(from<PROJECT_SCHEMA_VERSION)p.migrations.push({fromSchema:from,toSchema:PROJECT_SCHEMA_VERSION,appVersion:VIEWER_APP_VERSION,at:new Date().toISOString()});(p.pages||[]).forEach(pg=>(pg.widgets||[]).forEach(normalizeViewerWidget));return p;}
+let project=null, activePageId=null, charts=new Map();const tableViewState={};const VIEWER_APP_VERSION='2.0.1';const PROJECT_SCHEMA_VERSION=8;const WIDGET_REGISTRY_VERSION=1;const WIDGET_REGISTRY={table:1,summary:1,pivot:1,kpi:1,bar:1,horizontalBar:1,line:1,pie:1,donut:1,scatter:1,text:1};function normalizeViewerWidget(w){if(!w||!w.type)return w;if(!WIDGET_REGISTRY[w.type]){w.unsupported=true;return w;}w.filters=w.filters||[];w.registryVersion=w.registryVersion||WIDGET_REGISTRY_VERSION;if(w.w==null)w.w=420;if(w.h==null)w.h=300;if(w.x==null)w.x=24;if(w.y==null)w.y=80;if(w.type==='text'&&w.content==null)w.content=w.title||'';return w;}function migrateViewerProject(p){if(!p||typeof p!=='object')p={};const from=Number(p.schemaVersion||1);p.projectType=p.projectType||'databench-project';p.schemaVersion=PROJECT_SCHEMA_VERSION;p.viewer=Object.assign({defaultMode:'responsive',allowFilters:true,mobileLayout:'stacked',pageNavigation:'tabs',schemaVersion:PROJECT_SCHEMA_VERSION},p.viewer||{});p.architecture=Object.assign({engine:'DataBench viewer runtime',widgetRegistryVersion:WIDGET_REGISTRY_VERSION,schemaVersion:PROJECT_SCHEMA_VERSION},p.architecture||{});p.migrations=Array.isArray(p.migrations)?p.migrations:[];if(from<PROJECT_SCHEMA_VERSION)p.migrations.push({fromSchema:from,toSchema:PROJECT_SCHEMA_VERSION,appVersion:VIEWER_APP_VERSION,at:new Date().toISOString()});(p.pages||[]).forEach(pg=>(pg.widgets||[]).forEach(normalizeViewerWidget));return p;}
 const $=id=>document.getElementById(id);
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -1007,7 +1010,7 @@ async function loadDefaultHostedProject(){const url=window.DATABENCH_DEFAULT_PRO
 </template>
 
 <script>
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.0.1';
 const PROJECT_SCHEMA_VERSION = 8;
 const WIDGET_REGISTRY_VERSION = 1;
 const AUTOSAVE_KEY = 'databench_autosave_current';
@@ -2172,7 +2175,7 @@ async function exportStaticSitePackage() {
   let viewerHtml;
   try { viewerHtml = viewerHtmlFromTemplate({ project:null, defaultProjectUrl:'project.databench.json', embedded:false }); }
   catch(err) { console.error(err); return toast('Viewer template is missing.'); }
-  viewerHtml = viewerHtml.replace('<title>DataBench Viewer v2.0.0</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
+  viewerHtml = viewerHtml.replace('<title>DataBench Viewer v2.0.1</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
   const manifest = JSON.stringify({ appName:'DataBench', appVersion:APP_VERSION, schemaVersion:PROJECT_SCHEMA_VERSION, projectName:project.projectName || 'Untitled DataBench Project', generatedAt:new Date().toISOString(), files:['index.html','project.databench.json','databench.manifest.json','README.txt'], viewer:{defaultProjectUrl:'project.databench.json'} }, null, 2);
   const readme = `DataBench static viewer package\n\nOpen index.html from a static web server, or upload this folder to GitHub Pages, Netlify, Cloudflare Pages, or your web host.\n\nFiles:\n- index.html: mobile-friendly DataBench Viewer\n- project.databench.json: dashboard project and embedded source data\n\nHosted URL pattern:\n/databench/viewer/?project=../projects/example.databench.json\n\nGenerated: ${new Date().toISOString()}\nProject: ${project.projectName || 'Untitled DataBench Project'}\n`;
   const baseName = safeFileName(project.projectName || 'databench');
@@ -2236,7 +2239,7 @@ function exportMobileViewerHtml() {
   let html;
   try { html = viewerHtmlFromTemplate({ project, embedded:true }); }
   catch(err) { console.error(err); return toast('Mobile viewer template is missing.'); }
-  html = html.replace('<title>DataBench Viewer v2.0.0</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
+  html = html.replace('<title>DataBench Viewer v2.0.1</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
   downloadText(`${safeFileName(project.projectName || 'databench')}.databench.viewer.html`, html, 'text/html');
   toast('Mobile viewer HTML exported.');
 }
@@ -3018,8 +3021,8 @@ function commandDefinitions() {
 }
 function showStartScreen() { renderRecentProjects(); $('startModal')?.classList.remove('hidden'); }
 function hideStartScreen() { $('startModal')?.classList.add('hidden'); }
-function openCommandPalette() { commandPaletteIndex = 0; $('commandPalette')?.classList.remove('hidden'); const input=$('commandInput'); if(input){ input.value=''; input.focus(); } renderCommandPalette(); }
-function closeCommandPalette() { $('commandPalette')?.classList.add('hidden'); }
+function openCommandPalette() { const p=$('commandPalette'); if(!p) return; commandPaletteIndex = 0; p.classList.remove('hidden'); document.body.classList.add('command-open'); const input=$('commandInput'); if(input){ input.value=''; input.focus(); } renderCommandPalette(); }
+function closeCommandPalette() { $('commandPalette')?.classList.add('hidden'); document.body.classList.remove('command-open'); }
 function filteredCommands() {
   const q = ($('commandInput')?.value || '').trim().toLowerCase();
   const cmds = commandDefinitions();
@@ -3050,6 +3053,7 @@ function initStartAndCommands() {
   $('startHealthBtn')?.addEventListener('click', () => { hideStartScreen(); $('healthCheckBtn')?.click(); });
   $('commandInput')?.addEventListener('input', () => { commandPaletteIndex = 0; renderCommandPalette(); });
   $('commandList')?.addEventListener('click', e => { const btn=e.target.closest('[data-command-index]'); if(btn) runCommand(Number(btn.dataset.commandIndex)); });
+  $('commandPalette')?.addEventListener('pointerdown', e => { if (e.target && e.target.id === 'commandPalette') closeCommandPalette(); });
   document.addEventListener('click', e => { const b=e.target.closest('[data-load-recent]'); if (b) loadRecentProject(Number(b.dataset.loadRecent)); });
   document.addEventListener('keydown', e => {
     const cmdOpen = !$('commandPalette')?.classList.contains('hidden');
@@ -3066,6 +3070,7 @@ function initStartAndCommands() {
   }
 }
 initStartAndCommands();
+closeCommandPalette();
 
 window.addEventListener('beforeunload', () => {
   if (autosaveDirty) flushAutosave('beforeunload');
