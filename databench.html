@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DataBench v1.4.4</title>
+  <title>DataBench v2.0.0</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <style>
     :root {
       --bg: #0f172a;
@@ -263,6 +264,15 @@
     .data-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
     .data-table th, .data-table td { border: 1px solid #e2e8f0; padding: .35rem .45rem; text-align: left; white-space: nowrap; }
     .data-table th { background: #f1f5f9; position: sticky; top: 0; z-index: 1; }
+    .design-row { display:grid; grid-template-columns: 1fr 1fr; gap:.55rem; align-items:end; }
+    .design-row input[type="checkbox"] { width:auto; margin-right:.35rem; }
+    .canvas-size-note { font-size:.74rem; color: var(--muted); margin-top:.35rem; }
+    .text-widget .widget-body { line-height:1.45; font-size:1rem; }
+    .text-content h1, .text-content h2, .text-content h3 { margin:.2rem 0 .55rem; line-height:1.1; }
+    .text-content p { margin:.35rem 0; }
+    .text-content ul { margin:.35rem 0 .35rem 1.1rem; padding:0; }
+    .text-content code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:rgba(15,23,42,.08); border-radius:6px; padding:.1rem .25rem; }
+    .text-content a { color: inherit; text-decoration: underline; }
     .field-box {
       max-height: 150px;
       overflow: auto;
@@ -336,6 +346,41 @@
     .diagnostic-warn { color: #fbbf24; }
     .relationship-actions { display:flex; gap:.35rem; margin-top:.45rem; }
     .relationship-actions button { padding:.35rem .5rem; font-size:.75rem; }
+
+    .prep-panel { display:grid; gap:.65rem; }
+    .field-profile-card {
+      border:1px solid var(--border); border-radius:16px; padding:.85rem;
+      background: color-mix(in srgb, var(--panel-2) 70%, transparent);
+      color: var(--text); font-size:.9rem; line-height:1.35;
+    }
+    .field-profile-card h3 { margin:0 0 .35rem; font-size:1rem; }
+    .field-profile-card dl { display:grid; grid-template-columns: 1fr auto; gap:.25rem .75rem; margin:.5rem 0; }
+    .field-profile-card dt { color: var(--muted); }
+    .field-profile-card dd { margin:0; font-weight:800; }
+    .mini-bars { display:grid; gap:.3rem; margin-top:.5rem; }
+    .mini-bar { display:grid; grid-template-columns: minmax(0,1fr) 3.5rem; gap:.45rem; align-items:center; font-size:.78rem; }
+    .mini-bar span:first-child { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .mini-bar-track { grid-column:1 / -1; height:6px; background:rgba(148,163,184,.25); border-radius:999px; overflow:hidden; }
+    .mini-bar-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); border-radius:999px; }
+    .table-tools { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.5rem; margin-bottom:.55rem; }
+    .table-tools input { width:min(260px,100%); padding:.45rem .6rem; font-size:.82rem; }
+    .table-tools .pager { display:flex; align-items:center; gap:.35rem; font-size:.78rem; color:inherit; opacity:.8; }
+    .data-table th[data-table-sort] { cursor:pointer; user-select:none; }
+    .data-table th[data-table-sort]:hover { text-decoration:underline; }
+
+
+    .widget.text-widget .widget-body { font-size:.95rem; line-height:1.45; }
+    .widget.text-widget .widget-body h1,.widget.text-widget .widget-body h2,.widget.text-widget .widget-body h3 { margin:.25rem 0 .5rem; line-height:1.15; }
+    .widget.text-widget .widget-body p { margin:0 0 .65rem; }
+    .widget.text-widget .widget-body ul { margin:.3rem 0 .65rem 1.25rem; padding:0; }
+    .layout-tools { display:grid; gap:.55rem; }
+    .layout-tools .tool-row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.4rem; }
+    .layout-tools .tool-row.two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .layout-tools button { padding:.5rem .45rem; font-size:.78rem; }
+    .snap-row { display:flex; align-items:center; justify-content:space-between; gap:.7rem; border:1px solid var(--border); border-radius:12px; padding:.5rem .6rem; background:rgba(255,255,255,.04); }
+    .snap-row label { margin:0; width:auto; color:var(--text); }
+    .snap-row input[type="checkbox"] { width:auto; }
+
     .toast {
       position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
       background: #020617; color: var(--text); border: 1px solid var(--border);
@@ -438,6 +483,25 @@
     .widget-context-menu button:hover { background: rgba(255,255,255,.08); }
     .widget-context-menu button.danger { color: #fecdd3; background: rgba(251,113,133,.08); }
 
+    .health-modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(2,6,23,.72); padding: 1rem; }
+    .health-modal.hidden { display: none; }
+    .health-card { width: min(760px, 94vw); max-height: 86vh; overflow: auto; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 22px; box-shadow: var(--shadow); padding: 1rem; }
+    .health-card h2 { margin-top: 0; }
+    .health-card ul { margin: .5rem 0 0; padding-left: 1.25rem; }
+    .publish-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .publish-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .8rem; }
+    .publish-qr { display: grid; place-items: center; background: #fff; border-radius: 18px; border: 1px solid rgba(15,23,42,.16); padding: 1rem; margin-top: .8rem; }
+    .publish-qr img { width: 220px; height: 220px; }
+    @media (max-width: 760px) { .publish-grid { grid-template-columns: 1fr; } }
+
+    .health-row { display: flex; justify-content: space-between; gap: .75rem; padding: .45rem 0; border-bottom: 1px solid var(--border); }
+    .health-ok { color: var(--ok); font-weight: 800; }
+    .health-warn { color: #fbbf24; font-weight: 800; }
+    .health-bad { color: var(--danger); font-weight: 800; }
+    .contrast-report { margin-top:.65rem; border:1px solid var(--border); border-radius:12px; padding:.65rem; background:rgba(255,255,255,.04); font-size:.82rem; line-height:1.35; }
+    .contrast-report b { color: var(--ok); }
+    .contrast-report .warn { color:#fbbf24; font-weight:800; }
+
     @supports not (background: color-mix(in srgb, red, blue)) {
       .workflow-tabs, .inspector-tabs { background: rgba(15,23,42,.92); }
     }
@@ -453,6 +517,30 @@
       main { min-height: 720px; }
       header { position: sticky; top: 0; }
     }
+
+    /* v1.9 home screen + command palette */
+    .start-modal,.command-modal { position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; padding:1rem; background:rgba(2,6,23,.72); backdrop-filter:blur(14px); }
+    .start-card,.command-card { width:min(920px,96vw); max-height:90vh; overflow:auto; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:26px; box-shadow:var(--shadow); }
+    .start-card { padding:1.2rem; }
+    .start-top { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; padding-bottom:1rem; border-bottom:1px solid var(--border); }
+    .start-title h2 { margin:.15rem 0 .25rem; font-size:clamp(1.4rem,3vw,2.2rem); }
+    .start-title p { margin:0; color:var(--muted); max-width:720px; }
+    .start-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.8rem; margin:1rem 0; }
+    .start-action { text-align:left; padding:1rem; border-radius:18px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); min-height:110px; }
+    .start-action strong { display:block; font-size:1rem; margin-bottom:.25rem; }
+    .start-action span { display:block; color:var(--muted); font-size:.86rem; line-height:1.35; }
+    .recent-list { display:grid; gap:.55rem; }
+    .recent-item { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.7rem .8rem; border:1px solid var(--border); border-radius:14px; background:rgba(255,255,255,.04); }
+    .recent-item small { color:var(--muted); display:block; margin-top:.15rem; }
+    .command-card { max-width:760px; padding:.75rem; }
+    .command-input { width:100%; font-size:1.05rem; padding:.9rem 1rem; border-radius:18px; margin-bottom:.65rem; }
+    .command-list { display:grid; gap:.35rem; }
+    .command-item { width:100%; text-align:left; display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:.78rem .9rem; border-radius:14px; background:transparent; color:var(--text); }
+    .command-item:hover,.command-item.active { background:var(--panel-2); filter:none; }
+    .command-item span { color:var(--muted); font-size:.78rem; }
+    .help-strip { margin-top:1rem; padding:.85rem; border-radius:18px; background:rgba(255,255,255,.04); border:1px solid var(--border); color:var(--muted); }
+    @media (max-width: 760px) { .start-grid { grid-template-columns:1fr; } .start-top { flex-direction:column; } }
+
   </style>
 </head>
 <body>
@@ -461,7 +549,7 @@
       <div class="brand">
         <div class="logo"></div>
         <div>
-          <h1>DataBench <span class="version">v1.4.4</span></h1>
+          <h1>DataBench <span class="version">v1.8.0</span></h1>
           <p>Quick and dirty data visualization, analysis, themes, pivot tables, PDF/PPT exports, templates, calculated fields, relationships, filters, autosave, and JSON projects.</p>
         </div>
       </div>
@@ -469,6 +557,8 @@
         <span id="autosaveStatus" class="autosave-status" data-mode="normal" title="Autosave status"><span class="autosave-led" aria-hidden="true"></span><span id="autosaveStatusText">Autosave ready</span></span>
         <div class="tool-group" title="Project">
           <button id="newProjectBtn">New</button>
+          <button id="homeBtn" title="Open the DataBench start screen">Home</button>
+          <button id="commandPaletteBtn" title="Open command palette (Ctrl/Cmd+K)">⌘K</button>
           <button id="restoreAutosaveBtn">Restore</button>
           <button id="saveJsonBtn" class="primary">Save JSON</button>
           <label class="small" style="margin:0; width:auto; color:var(--text); cursor:pointer;">
@@ -485,6 +575,10 @@
           <button id="exportPdfBtn">PDF</button>
           <button id="exportPptBtn">PPTX</button>
           <button id="exportMobileViewerBtn">Mobile Viewer</button>
+          <button id="exportStaticSiteBtn">Static Site</button>
+          <button id="publishLinkBtn">Publish Link</button>
+          <button id="previewViewerBtn">Preview Viewer</button>
+          <button id="healthCheckBtn">Health Check</button>
           <a id="openViewerAppBtn" class="button ghost" href="./viewer/" target="_blank" rel="noopener" title="Open the deployed DataBench Viewer app">Open Viewer</a>
         </div>
       </div>    </header>
@@ -502,6 +596,32 @@
         <button id="sampleDataBtn" class="primary" style="margin-top:.55rem; width:100%;">Load Sample Project</button>
         <p class="hint">For Google Sheets, use File → Share → Publish to web → CSV, then paste that CSV link here.</p>
         <div id="sourceList" class="list"></div>
+      </div>
+
+      <div class="section">
+        <h2>Data Prep & Field Profiles</h2>
+        <div class="prep-panel">
+          <label>Data source</label><select id="prepSource"></select>
+          <label>Field</label><select id="prepField"></select>
+          <div class="row">
+            <button id="profileFieldBtn">Profile Field</button>
+            <button id="renameFieldBtn">Rename Field</button>
+          </div>
+          <div class="row">
+            <div><label>Change type</label><select id="prepType"><option value="text">Text</option><option value="number">Number</option><option value="date">Date</option><option value="boolean">Boolean</option></select></div>
+            <div style="display:flex;align-items:end;"><button id="applyTypeBtn" style="width:100%;">Apply Type</button></div>
+          </div>
+          <div class="row">
+            <button id="convertExcelDatesBtn">Excel Dates → ISO Dates</button>
+            <button id="trimFieldBtn">Trim Text</button>
+          </div>
+          <div class="row">
+            <button id="replaceBlanksBtn">Replace Blanks</button>
+            <button id="removeEmptyRowsBtn">Remove Empty Rows</button>
+          </div>
+          <button id="removeDuplicatesBtn">Remove Duplicate Rows</button>
+          <div id="fieldProfilePanel" class="field-profile-card hint">Load data, then choose a field to see type, blanks, uniques, ranges, and top values.</div>
+        </div>
       </div>
 
       <div class="section">
@@ -558,12 +678,38 @@
           <button id="addPivotBtn">Add Pivot</button>
         </div>
         <div class="row" style="margin-top:.55rem;">
+          <button id="addTextBtn">Add Text</button>
+          <button id="duplicatePageBtn">Duplicate Page</button>
+        </div>
+        <div class="row" style="margin-top:.55rem;">
           <button id="restoreAutosaveBtn2">Restore Autosave</button>
           <button id="exportDataBtn">Export CSV</button>
         </div>
         <div class="row" style="margin-top:.55rem;">
           <button id="duplicateWidgetBtn">Duplicate</button>
           <button id="deleteWidgetBtn" class="danger">Delete</button>
+        </div>
+      </div>
+
+
+      <div class="section">
+        <h2>Layout Tools</h2>
+        <div class="layout-tools">
+          <label>Page size</label>
+          <select id="pageSizePreset">
+            <option value="desktop">Desktop canvas · 1280 × 780</option>
+            <option value="wide">16:9 dashboard · 1366 × 768</option>
+            <option value="fourThree">4:3 slide · 1024 × 768</option>
+            <option value="letter">Letter page · 816 × 1056</option>
+            <option value="a4">A4 page · 794 × 1123</option>
+            <option value="mobile">Mobile card stack · 390 × 844</option>
+          </select>
+          <div class="snap-row"><label for="snapToGrid">Snap to grid</label><input id="snapToGrid" type="checkbox" checked></div>
+          <div class="row"><div><label>Grid size</label><input id="gridSizeInput" type="number" min="4" max="96" value="24"></div><div style="display:flex;align-items:end;"><button id="snapSelectedBtn" style="width:100%;">Snap Selected</button></div></div>
+          <div class="tool-row"><button id="alignLeftBtn">Left</button><button id="alignCenterBtn">Center</button><button id="alignRightBtn">Right</button></div>
+          <div class="tool-row"><button id="alignTopBtn">Top</button><button id="alignMiddleBtn">Middle</button><button id="alignBottomBtn">Bottom</button></div>
+          <div class="tool-row two"><button id="fitWidgetsBtn">Fit Page to Widgets</button><button id="arrangeGridBtn">Arrange to Grid</button></div>
+          <p class="hint">Use these for quick dashboard composition: snap widgets to the canvas grid, align the selected widget, duplicate whole pages, or set page size presets.</p>
         </div>
       </div>
 
@@ -582,6 +728,7 @@
           <option value="custom">Custom</option>
         </select>
         <button id="applyThemePresetBtn" class="primary" style="margin-top:.55rem; width:100%;">Apply Theme Preset</button>
+        <div id="themeContrastReport" class="contrast-report"></div>
         <p class="hint">Presets range from professional to fun. After applying one, tweak every major UI and canvas color below.</p>
         <div class="row">
           <div><label>Accent</label><input id="accentColor" type="color" value="#38bdf8"></div>
@@ -650,7 +797,10 @@
             <div><label>Height</label><input id="wH" type="number"></div>
           </div>
           <label>Data source</label><select id="wSource"></select>
-          <label>Widget type</label><select id="wType"><option value="table">Table</option><option value="bar">Bar chart</option><option value="horizontalBar">Horizontal bar</option><option value="line">Line chart</option><option value="pie">Pie chart</option><option value="donut">Donut chart</option><option value="scatter">Scatter plot</option><option value="kpi">KPI card</option><option value="pivot">Pivot table</option><option value="summary">Data summary</option></select>
+          <label>Widget type</label><select id="wType"><option value="table">Table</option><option value="bar">Bar chart</option><option value="horizontalBar">Horizontal bar</option><option value="line">Line chart</option><option value="pie">Pie chart</option><option value="donut">Donut chart</option><option value="scatter">Scatter plot</option><option value="kpi">KPI card</option><option value="pivot">Pivot table</option><option value="summary">Data summary</option><option value="text">Text / Markdown</option></select>
+          <div id="textOptions" style="display:none;">
+            <label>Text / Markdown content</label><textarea id="wContent" placeholder="Use # headings, **bold**, *italic*, and bullet lines."></textarea>
+          </div>
           <div id="chartOptions">
             <label>Dimension / Pivot rows</label><select id="wDimension"></select>
             <label>Pivot columns</label><select id="wPivotColumn"></select>
@@ -699,43 +849,76 @@
       </div>
     </aside>
   </div>
+
+  <div id="startModal" class="start-modal hidden" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+    <div class="start-card">
+      <div class="start-top">
+        <div class="start-title"><h2 id="startTitle">DataBench</h2><p>Build, inspect, publish, and share small dashboards from messy spreadsheet data.</p></div>
+        <button id="closeStartModalBtn" class="ghost">Close</button>
+      </div>
+      <div class="start-grid">
+        <button id="startNewProjectBtn" class="start-action"><strong>New project</strong><span>Start with an empty workbench and upload data.</span></button>
+        <button id="startOpenProjectBtn" class="start-action"><strong>Open project JSON</strong><span>Load a saved .databench.json project file.</span></button>
+        <button id="startRestoreBtn" class="start-action"><strong>Restore autosave</strong><span>Recover the latest browser-saved work.</span></button>
+        <button id="startSampleBtn" class="start-action"><strong>Load sample project</strong><span>Try DataBench with built-in sales and customer data.</span></button>
+        <button id="startViewerBtn" class="start-action"><strong>Open viewer</strong><span>Preview the mobile-friendly dashboard reader.</span></button>
+        <button id="startHealthBtn" class="start-action"><strong>Health check</strong><span>Scan the project before exporting or publishing.</span></button>
+      </div>
+      <h3 style="margin:.6rem 0 .4rem;">Recent browser projects</h3>
+      <div id="recentProjectsList" class="recent-list"><p class="hint">No recent projects yet.</p></div>
+      <div class="help-strip"><strong>Tip:</strong> Press <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>K</kbd> anywhere in the editor to open the command palette.</div>
+    </div>
+  </div>
+  <div id="commandPalette" class="command-modal hidden" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="command-card">
+      <input id="commandInput" class="command-input" placeholder="Type a command…" autocomplete="off">
+      <div id="commandList" class="command-list"></div>
+      <p class="hint" style="margin:.65rem .4rem .2rem;">Use ↑/↓ and Enter. Escape closes.</p>
+    </div>
+  </div>
+
   <div id="widgetContextMenu" class="widget-context-menu" role="menu" aria-hidden="true"></div>
   <div id="toast" class="toast"></div>
+  <div id="healthModal" class="health-modal hidden"><div class="health-card"><div style="display:flex;align-items:center;justify-content:space-between;gap:1rem"><h2 id="healthModalTitle">Project Health Check</h2><button id="closeHealthModalBtn">Close</button></div><div id="healthReport"></div></div></div>
   <template id="databenchViewerTemplate">
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DataBench Viewer</title>
+  <title>DataBench Viewer v2.0.0</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <style>
     :root{--bg:#0f172a;--panel:#111827;--panel2:#1f2937;--text:#e5e7eb;--muted:#94a3b8;--accent:#38bdf8;--accent2:#a78bfa;--on-accent:#07111f;--ok:#34d399;--danger:#fb7185;--border:rgba(255,255,255,.14);--canvas:#f8fafc;--card:#fff;--cardText:#0f172a;--grid:#e2e8f0;--shadow:0 16px 40px rgba(0,0,0,.24);--radius:18px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font,Inter,system-ui,sans-serif);min-height:100vh} button,input,select{font:inherit} a.button{box-sizing:border-box;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:.62rem .9rem;background:var(--panel2);color:var(--text);cursor:pointer} button{border:0;border-radius:999px;padding:.62rem .9rem;background:var(--panel2);color:var(--text);cursor:pointer} button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--on-accent,#07111f);font-weight:800} button.ghost,a.button.ghost{background:transparent;border:1px solid var(--border)} input,select{width:100%;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:12px;color:var(--text);padding:.65rem .75rem} label{display:block;font-size:.78rem;color:var(--muted);margin:.6rem 0 .25rem}.hidden{display:none!important}
-    header{position:sticky;top:0;z-index:10;background:var(--panel);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:.8rem clamp(.8rem,2vw,1.3rem);display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:.75rem}.logo{width:38px;height:38px;border-radius:12px;background:conic-gradient(from 220deg,var(--accent),var(--accent2),var(--ok),var(--accent));box-shadow:0 0 0 4px rgba(255,255,255,.05)} h1{margin:0;font-size:1.05rem}.brand p{margin:.05rem 0 0;color:var(--muted);font-size:.82rem}.actions{display:flex;gap:.45rem;align-items:center;flex-wrap:wrap}.viewer-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;padding:1rem;max-width:1440px;margin:0 auto}.open-screen{max-width:720px;margin:8vh auto;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:24px;padding:1.2rem;box-shadow:var(--shadow)}.open-screen h2{margin-top:0}.hint{color:var(--muted);font-size:.9rem;line-height:1.45}.nav-row{display:flex;gap:.5rem;align-items:center;justify-content:space-between;flex-wrap:wrap;background:rgba(255,255,255,.045);border:1px solid var(--border);border-radius:20px;padding:.65rem}.page-tabs{display:flex;gap:.4rem;flex-wrap:wrap}.page-tabs button.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--on-accent,#07111f);font-weight:800}.filter-panel{background:rgba(255,255,255,.045);border:1px solid var(--border);border-radius:20px;padding:.8rem}.filter-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:.55rem;align-items:end}.chips{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.55rem}.chip{display:inline-flex;align-items:center;gap:.35rem;border:1px solid var(--border);border-radius:999px;padding:.35rem .45rem .35rem .65rem;background:rgba(255,255,255,.06);font-size:.82rem}.chip button{padding:.12rem .38rem;background:rgba(255,255,255,.12)}.canvas-wrap{overflow:auto;border-radius:24px}.canvas{position:relative;width:1200px;min-height:850px;margin:0 auto;background:var(--canvas);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;border-radius:24px;box-shadow:var(--shadow);padding:0}.widget{position:absolute;border:1px solid rgba(15,23,42,.15);border-radius:16px;background:var(--card);color:var(--cardText);box-shadow:0 12px 30px rgba(15,23,42,.12);overflow:hidden}.widget-head{height:45px;display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:0 .8rem;border-bottom:1px solid rgba(15,23,42,.12);font-weight:850}.widget-head button{font-size:.74rem;padding:.3rem .52rem;background:rgba(15,23,42,.07);color:inherit}.widget-body{height:calc(100% - 45px);padding:.8rem;overflow:auto}.data-table{border-collapse:collapse;width:100%;font-size:12px;color:var(--cardText)}.data-table th,.data-table td{border:1px solid var(--tableBorder,#d7dee8);padding:6px;text-align:left;white-space:nowrap;color:var(--cardText)}.data-table th{background:var(--tableHead,#f1f5f9);color:var(--cardText);font-weight:850}.data-table td{background:transparent}.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.7rem}.summary-card{border:1px solid var(--tableBorder,#dbe3ee);border-radius:13px;background:var(--summaryCard,rgba(255,255,255,.8));color:var(--cardText);padding:.75rem}.summary-card span{display:block;color:var(--summaryMuted,#64748b);font-size:.82rem;margin-top:.25rem}.kpi{height:100%;display:grid;place-items:center;text-align:center}.kpi b{display:block;font-size:clamp(2.1rem,8vw,4rem);line-height:1}.kpi span{opacity:.68}.modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(2,6,23,.72);padding:1rem}.modal-card{width:min(1080px,96vw);height:min(760px,90vh);background:var(--card);color:var(--cardText);border-radius:22px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}.modal-card .widget-head{height:52px}.modal-body{flex:1;padding:1rem;overflow:auto}.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#020617;color:#fff;border:1px solid var(--border);border-radius:999px;padding:.7rem 1rem;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1}.mobile-layout{display:none}
-    @media (max-width: 760px){header{align-items:flex-start}.brand p{display:none}.actions{width:100%}.actions button,.actions label,.actions a.button{flex:1;text-align:center}.viewer-shell{padding:.7rem}.filter-grid{grid-template-columns:1fr}.desktop-layout{display:none}.mobile-layout{display:block}.canvas-wrap{overflow:visible}.canvas{width:100%;min-height:0;background:transparent;box-shadow:none;border-radius:0}.widget{position:relative!important;left:auto!important;top:auto!important;width:100%!important;height:auto!important;min-height:260px;margin:0 0 .8rem;border-radius:18px}.widget.kpi-widget{min-height:160px}.widget.table-widget,.widget.pivot-widget,.widget.summary-widget{min-height:220px}.widget-body{height:auto;min-height:215px}.widget.kpi-widget .widget-body{min-height:115px}.data-table{font-size:11px}.page-tabs{display:none}.page-select-wrap{display:block!important}.nav-row{align-items:stretch}.nav-row>*{width:100%}}
+    header{position:sticky;top:0;z-index:10;background:var(--panel);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:.8rem clamp(.8rem,2vw,1.3rem);display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:.75rem}.logo{width:38px;height:38px;border-radius:12px;background:conic-gradient(from 220deg,var(--accent),var(--accent2),var(--ok),var(--accent));box-shadow:0 0 0 4px rgba(255,255,255,.05)} h1{margin:0;font-size:1.05rem}.brand p{margin:.05rem 0 0;color:var(--muted);font-size:.82rem}.actions{display:flex;gap:.45rem;align-items:center;flex-wrap:wrap}.viewer-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;padding:1rem;max-width:1440px;margin:0 auto}.open-screen{max-width:720px;margin:8vh auto;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:24px;padding:1.2rem;box-shadow:var(--shadow)}.open-screen h2{margin-top:0}.hint{color:var(--muted);font-size:.9rem;line-height:1.45}.nav-row{display:flex;gap:.5rem;align-items:center;justify-content:space-between;flex-wrap:wrap;background:rgba(255,255,255,.045);border:1px solid var(--border);border-radius:20px;padding:.65rem}.page-tabs{display:flex;gap:.4rem;flex-wrap:wrap}.page-tabs button.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--on-accent,#07111f);font-weight:800}.filter-panel{background:rgba(255,255,255,.045);border:1px solid var(--border);border-radius:20px;padding:.8rem}.filter-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:.55rem;align-items:end}.chips{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.55rem}.chip{display:inline-flex;align-items:center;gap:.35rem;border:1px solid var(--border);border-radius:999px;padding:.35rem .45rem .35rem .65rem;background:rgba(255,255,255,.06);font-size:.82rem}.chip button{padding:.12rem .38rem;background:rgba(255,255,255,.12)}.canvas-wrap{overflow:auto;border-radius:24px}.canvas{position:relative;width:1200px;min-height:850px;margin:0 auto;background:var(--canvas);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;border-radius:24px;box-shadow:var(--shadow);padding:0}.widget{position:absolute;border:1px solid rgba(15,23,42,.15);border-radius:16px;background:var(--card);color:var(--cardText);box-shadow:0 12px 30px rgba(15,23,42,.12);overflow:hidden}.widget-head{height:45px;display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:0 .8rem;border-bottom:1px solid rgba(15,23,42,.12);font-weight:850}.widget-head button{font-size:.74rem;padding:.3rem .52rem;background:rgba(15,23,42,.07);color:inherit}.widget-body{height:calc(100% - 45px);padding:.8rem;overflow:auto}.data-table{border-collapse:collapse;width:100%;font-size:12px;color:var(--cardText)}.data-table th,.data-table td{border:1px solid var(--tableBorder,#d7dee8);padding:6px;text-align:left;white-space:nowrap;color:var(--cardText)}.data-table th{background:var(--tableHead,#f1f5f9);color:var(--cardText);font-weight:850}.data-table td{background:transparent}.table-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.55rem}.table-tools input{width:min(260px,100%);padding:.45rem .6rem;font-size:.82rem}.table-tools .pager{display:flex;align-items:center;gap:.35rem;font-size:.78rem;color:var(--cardText);opacity:.8}.data-table th[data-table-sort]{cursor:pointer;user-select:none}.data-table th[data-table-sort]:hover{text-decoration:underline}.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.7rem}.summary-card{border:1px solid var(--tableBorder,#dbe3ee);border-radius:13px;background:var(--summaryCard,rgba(255,255,255,.8));color:var(--cardText);padding:.75rem}.summary-card span{display:block;color:var(--summaryMuted,#64748b);font-size:.82rem;margin-top:.25rem}.kpi{height:100%;display:grid;place-items:center;text-align:center}.kpi b{display:block;font-size:clamp(2.1rem,8vw,4rem);line-height:1}.kpi span{opacity:.68}.widget.text-widget .widget-body{font-size:.95rem;line-height:1.45}.widget.text-widget .widget-body h1,.widget.text-widget .widget-body h2,.widget.text-widget .widget-body h3{margin:.25rem 0 .5rem;line-height:1.15}.widget.text-widget .widget-body p{margin:0 0 .65rem}.widget.text-widget .widget-body ul{margin:.3rem 0 .65rem 1.25rem;padding:0}.modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(2,6,23,.72);padding:1rem}.modal-card{width:min(1080px,96vw);height:min(760px,90vh);background:var(--card);color:var(--cardText);border-radius:22px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}.modal-card .widget-head{height:52px}.modal-body{flex:1;padding:1rem;overflow:auto}.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#020617;color:#fff;border:1px solid var(--border);border-radius:999px;padding:.7rem 1rem;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1}.mobile-layout{display:none}.filter-toggle{display:none}.filter-backdrop{position:fixed;inset:0;z-index:24;background:rgba(2,6,23,.55);backdrop-filter:blur(2px)}.presentation-bar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:60;display:flex;gap:.45rem;background:rgba(2,6,23,.82);border:1px solid var(--border);border-radius:999px;padding:.45rem;box-shadow:var(--shadow)}body.presentation header,body.presentation .nav-row,body.presentation .filter-panel{display:none!important}body.presentation .viewer-shell{padding:0;max-width:none}body.presentation .canvas-wrap{height:100vh;border-radius:0;display:grid;place-items:center;background:var(--bg)}body.presentation .canvas{margin:0 auto;transform-origin:center top}.share-grid{display:grid;grid-template-columns:1fr auto;gap:.7rem;align-items:end}.qr-box{display:grid;place-items:center;border:1px solid var(--tableBorder,#d7dee8);border-radius:18px;padding:1rem;background:#fff}.qr-box img{width:220px;height:220px}.modal-card.share-card{height:auto;max-height:90vh}.modal-card.share-card .modal-body{min-height:0}.viewer-health{display:grid;gap:.55rem}.viewer-health p{margin:.15rem 0}.viewer-health .ok{color:var(--ok)}.viewer-health .warn{color:#fbbf24}.text-content{line-height:1.45}.text-content h1,.text-content h2,.text-content h3{margin:.15rem 0 .55rem;line-height:1.1}.text-content p{margin:.35rem 0}.text-content ul{margin:.35rem 0 .35rem 1.1rem;padding:0}.text-content code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:rgba(15,23,42,.08);border-radius:6px;padding:.1rem .25rem}.text-content a{color:inherit;text-decoration:underline}
+    @media (max-width: 760px){header{align-items:flex-start}.brand p{display:none}.actions{width:100%}.actions button,.actions label,.actions a.button{flex:1;text-align:center}.viewer-shell{padding:.7rem}.filter-panel{position:fixed;left:0;right:0;bottom:0;z-index:30;border-radius:22px 22px 0 0;max-height:78vh;overflow:auto;transform:translateY(110%);transition:transform .22s ease;background:var(--panel)}.filter-panel.open{transform:translateY(0)}.filter-grid{grid-template-columns:1fr}.desktop-layout{display:none}.mobile-layout{display:block}.canvas-wrap{overflow:visible}.canvas{width:100%;min-height:0;background:transparent;box-shadow:none;border-radius:0}.widget{position:relative!important;left:auto!important;top:auto!important;width:100%!important;height:auto!important;min-height:260px;margin:0 0 .8rem;border-radius:18px}.widget.kpi-widget{min-height:160px}.widget.table-widget,.widget.pivot-widget,.widget.summary-widget{min-height:220px}.widget-body{height:auto;min-height:215px}.widget.kpi-widget .widget-body{min-height:115px}.data-table{font-size:11px}.page-tabs{display:none}.page-select-wrap{display:block!important}.nav-row{align-items:stretch}.nav-row>*{width:100%}}
     @media (min-width: 761px){.page-select-wrap{display:none!important}}
   </style>
 </head>
 <body>
 <header>
   <div class="brand"><div class="logo"></div><div><h1 id="projectTitle">DataBench Viewer</h1><p>Mobile-friendly dashboard viewer</p></div></div>
-  <div class="actions"><a class="button ghost" href="../" title="Back to DataBench Editor">Editor</a><label class="ghost" style="margin:0;cursor:pointer;width:auto"><input id="projectFile" type="file" accept="application/json,.json,.databench.json" hidden> Open Project</label><button id="resetFiltersBtn" class="ghost">Reset Filters</button></div>
+  <div class="actions"><a class="button ghost" href="../" title="Back to DataBench Editor">Editor</a><label class="ghost" style="margin:0;cursor:pointer;width:auto"><input id="projectFile" type="file" accept="application/json,.json,.databench.json" hidden> Open Project</label><button id="filterToggleBtn" class="ghost">Filters</button><button id="presentBtn" class="ghost">Present</button><button id="shareBtn" class="ghost">Share</button><button id="resetFiltersBtn" class="ghost">Reset Filters</button></div>
 </header>
 <div id="openScreen" class="open-screen"><h2>Open a DataBench project</h2><p class="hint">Open a <code>.databench.json</code> project exported from DataBench, or use the editor’s <strong>Export Mobile Viewer</strong> option to create a standalone file that opens directly on phones and tablets.</p><label>Project JSON</label><input id="projectFileBig" type="file" accept="application/json,.json,.databench.json"><p class="hint">Projects are read locally in your browser. Nothing is uploaded. On a hosted site, the viewer can also load a project with <code>?project=../path/to/project.databench.json</code>.</p></div>
 <div id="app" class="viewer-shell hidden">
   <div class="nav-row"><div class="page-tabs" id="pageTabs"></div><div class="page-select-wrap hidden"><label style="margin-top:0">Page</label><select id="pageSelect"></select></div><div class="hint" id="metaLine"></div></div>
-  <div class="filter-panel"><div class="filter-grid"><div><label>Data source</label><select id="filterSource"></select></div><div><label>Field</label><select id="filterField"></select></div><div><label>Value</label><select id="filterValue"><option value="">Choose a value…</option></select></div><button id="addFilterBtn" class="primary">Add Filter</button></div><div id="filterChips" class="chips"></div></div>
+  <div id="filterPanel" class="filter-panel"><div class="filter-grid"><div><label>Data source</label><select id="filterSource"></select></div><div><label>Field</label><select id="filterField"></select></div><div><label>Value</label><select id="filterValue"><option value="">Choose a value…</option></select></div><button id="addFilterBtn" class="primary">Add Filter</button></div><div id="filterChips" class="chips"></div></div>
   <div class="canvas-wrap"><div id="canvas" class="canvas"></div></div>
 </div>
+<div id="filterBackdrop" class="filter-backdrop hidden"></div>
+<div id="presentationBar" class="presentation-bar hidden"><button id="presentPrevBtn">‹ Prev</button><button id="presentNextBtn">Next ›</button><button id="exitPresentBtn" class="primary">Exit presentation</button></div>
 <div id="modal" class="modal hidden"><div class="modal-card"><div class="widget-head"><strong id="modalTitle">Widget</strong><button id="closeModal">Close</button></div><div id="modalBody" class="modal-body"></div></div></div>
 <div id="toast" class="toast"></div>
 <script>
 window.DATABENCH_EMBEDDED_B64 = "__DATABENCH_PROJECT_B64__";
-let project=null, activePageId=null, charts=new Map();
+window.DATABENCH_DEFAULT_PROJECT_URL = "";
+let project=null, activePageId=null, charts=new Map();const tableViewState={};const VIEWER_APP_VERSION='2.0.0';const PROJECT_SCHEMA_VERSION=8;const WIDGET_REGISTRY_VERSION=1;const WIDGET_REGISTRY={table:1,summary:1,pivot:1,kpi:1,bar:1,horizontalBar:1,line:1,pie:1,donut:1,scatter:1,text:1};function normalizeViewerWidget(w){if(!w||!w.type)return w;if(!WIDGET_REGISTRY[w.type]){w.unsupported=true;return w;}w.filters=w.filters||[];w.registryVersion=w.registryVersion||WIDGET_REGISTRY_VERSION;if(w.w==null)w.w=420;if(w.h==null)w.h=300;if(w.x==null)w.x=24;if(w.y==null)w.y=80;if(w.type==='text'&&w.content==null)w.content=w.title||'';return w;}function migrateViewerProject(p){if(!p||typeof p!=='object')p={};const from=Number(p.schemaVersion||1);p.projectType=p.projectType||'databench-project';p.schemaVersion=PROJECT_SCHEMA_VERSION;p.viewer=Object.assign({defaultMode:'responsive',allowFilters:true,mobileLayout:'stacked',pageNavigation:'tabs',schemaVersion:PROJECT_SCHEMA_VERSION},p.viewer||{});p.architecture=Object.assign({engine:'DataBench viewer runtime',widgetRegistryVersion:WIDGET_REGISTRY_VERSION,schemaVersion:PROJECT_SCHEMA_VERSION},p.architecture||{});p.migrations=Array.isArray(p.migrations)?p.migrations:[];if(from<PROJECT_SCHEMA_VERSION)p.migrations.push({fromSchema:from,toSchema:PROJECT_SCHEMA_VERSION,appVersion:VIEWER_APP_VERSION,at:new Date().toISOString()});(p.pages||[]).forEach(pg=>(pg.widgets||[]).forEach(normalizeViewerWidget));return p;}
 const $=id=>document.getElementById(id);
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function escapeAttr(v){return escapeHtml(v).replace(/'/g,'&#39;')}
 function decodeB64Unicode(b64){return decodeURIComponent(Array.prototype.map.call(atob(b64),c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''))}
 function numberish(v){if(typeof v==='number')return v;const s=String(v??'').trim();if(!s)return NaN;return Number(s.replace(/[$,%]/g,'').replace(/,/g,''))}
 function formatNumber(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:2})}
@@ -781,18 +964,22 @@ function renderFilterValueOptions(){
 function sourceName(id){return project?.sources?.find(s=>s.id===id)?.name||'Source'}
 function activePage(){return project?.pages?.find(p=>p.id===activePageId)||project?.pages?.[0]}
 function applyTheme(){const t=project?.theme||{};const r=document.documentElement;const card=t.card||'#ffffff';const cardText=readableTextOn(card,t.cardText||t.text||'#0f172a');r.style.setProperty('--bg',t.bg||'#0f172a');r.style.setProperty('--panel',t.panel||'#111827');r.style.setProperty('--panel2',t.panel2||'#1f2937');r.style.setProperty('--text',t.text||'#e5e7eb');r.style.setProperty('--muted',t.muted||'#94a3b8');r.style.setProperty('--accent',t.accent||'#38bdf8');r.style.setProperty('--accent2',t.accent2||'#a78bfa');r.style.setProperty('--on-accent',readableAccentText(t.accent||'#38bdf8',t.accent2||'#a78bfa'));r.style.setProperty('--border',t.border||'rgba(255,255,255,.14)');r.style.setProperty('--canvas',t.canvas||'#f8fafc');r.style.setProperty('--card',card);r.style.setProperty('--cardText',cardText);r.style.setProperty('--tableBorder',colorToRgba(cardText,.18));r.style.setProperty('--tableHead',surfaceShade(card,cardText));r.style.setProperty('--summaryCard',relativeLuminance(card)>.5?'rgba(255,255,255,.82)':'rgba(15,23,42,.72)');r.style.setProperty('--summaryMuted',readableTextOn(relativeLuminance(card)>.5?'#f8fafc':'#111827',t.muted||cardText));r.style.setProperty('--grid',t.canvasGrid||'#e2e8f0')}
-function loadProject(p){project=p;project.pages=project.pages||[];project.sources=project.sources||[];activePageId=project.pages[0]?.id||null;project.pages.forEach(pg=>pg.filters=pg.filters||[]);applyTheme();$('projectTitle').textContent=project.projectName||'DataBench Viewer';$('openScreen').classList.add('hidden');$('app').classList.remove('hidden');renderAll();toast('Project loaded')}
+function loadProject(p){p=migrateViewerProject(p);project=p;project.pages=project.pages||[];project.sources=project.sources||[];activePageId=project.pages[0]?.id||null;project.pages.forEach(pg=>pg.filters=pg.filters||[]);applyTheme();$('projectTitle').textContent=project.projectName||'DataBench Viewer';$('openScreen').classList.add('hidden');$('app').classList.remove('hidden');renderAll();toast('Project loaded')}
 async function readFile(file){const text=await file.text();loadProject(JSON.parse(text))}
 function renderAll(){for(const c of charts.values())c.destroy();charts.clear();renderNav();renderFilters();renderCanvas()}
 function renderNav(){const pages=project.pages||[];$('pageTabs').innerHTML=pages.map(p=>`<button class="${p.id===activePageId?'active':''}" data-page="${p.id}">${escapeHtml(p.title)}</button>`).join('');$('pageSelect').innerHTML=pages.map(p=>`<option value="${p.id}">${escapeHtml(p.title)}</option>`).join('');$('pageSelect').value=activePageId||'';$('metaLine').textContent=`${pages.length} page${pages.length===1?'':'s'} · ${project.sources?.length||0} source${(project.sources?.length||0)===1?'':'s'}`}
 function renderFilters(){const srcs=project.sources||[];const currentSource=$('filterSource').value||srcs[0]?.id||'';const currentField=$('filterField').value;$('filterSource').innerHTML=srcs.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');if(currentSource)$('filterSource').value=currentSource;const cols=colsOf($('filterSource').value);$('filterField').innerHTML=cols.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');if(currentField&&cols.includes(currentField))$('filterField').value=currentField;renderFilterValueOptions();const filters=activePage()?.filters||[];$('filterChips').innerHTML=filters.length?filters.map(f=>`<span class="chip">${escapeHtml(sourceName(f.sourceId))} · ${escapeHtml(f.field)} = ${escapeHtml(f.value===''?'(blank)':f.value)} <button data-remove-filter="${f.id}">×</button></span>`).join(''):'<span class="hint">No active page filters. Tap a chart item or add a value filter.</span>'}
-function renderCanvas(){const page=activePage();const canvas=$('canvas');if(!page){canvas.innerHTML='<div class="hint">No pages in project.</div>';return}canvas.innerHTML='';const widgets=[...(page.widgets||[])].sort((a,b)=>(a.y-b.y)||(a.x-b.x));widgets.forEach(w=>canvas.appendChild(renderWidget(w)));widgets.forEach(w=>renderWidgetBody(w))}
+
+function ensurePageLayout(page){if(!page)return;const presets={dashboard:{width:1280,height:720},wide:{width:1280,height:850},letter:{width:816,height:1056},a4:{width:794,height:1123},mobile:{width:390,height:1200}};page.sizePreset=page.sizePreset||'wide';page.width=Number(page.width||presets[page.sizePreset]?.width||1200);page.height=Number(page.height||presets[page.sizePreset]?.height||850)}
+function markdownToHtml(md=''){const src=String(md||'');const lines=src.split(/\r?\n/);let html='',inList=false;const inline=t=>escapeHtml(t).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/`(.+?)`/g,'<code>$1</code>').replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');for(const line of lines){if(/^\s*[-*]\s+/.test(line)){if(!inList){html+='<ul>';inList=true}html+=`<li>${inline(line.replace(/^\s*[-*]\s+/,''))}</li>`;continue}if(inList){html+='</ul>';inList=false}if(/^###\s+/.test(line))html+=`<h3>${inline(line.replace(/^###\s+/,''))}</h3>`;else if(/^##\s+/.test(line))html+=`<h2>${inline(line.replace(/^##\s+/,''))}</h2>`;else if(/^#\s+/.test(line))html+=`<h1>${inline(line.replace(/^#\s+/,''))}</h1>`;else if(line.trim())html+=`<p>${inline(line)}</p>`;else html+='<br>'}if(inList)html+='</ul>';return html}
+function renderCanvas(){const page=activePage();const canvas=$('canvas');if(!page){canvas.innerHTML='<div class="hint">No pages in project.</div>';return}ensurePageLayout(page);canvas.style.width=page.width+'px';canvas.style.minHeight=page.height+'px';canvas.innerHTML='';const widgets=[...(page.widgets||[])].sort((a,b)=>(a.y-b.y)||(a.x-b.x));widgets.forEach(w=>canvas.appendChild(renderWidget(w)));widgets.forEach(w=>renderWidgetBody(w))}
 function renderWidget(w){const el=document.createElement('section');el.className=`widget ${w.type}-widget`;el.dataset.widget=w.id;el.style.left=(w.x||0)+'px';el.style.top=(w.y||0)+'px';el.style.width=(w.w||420)+'px';el.style.height=(w.h||300)+'px';const bg=w.bg||project.theme?.card||'#fff';const text=readableTextOn(bg,w.text||project.theme?.cardText||project.theme?.text||'#0f172a');el.style.background=bg;el.style.color=text;el.style.setProperty('--cardText',text);el.style.setProperty('--tableBorder',colorToRgba(text,.18));el.style.setProperty('--tableHead',surfaceShade(bg,text));el.style.setProperty('--summaryCard',relativeLuminance(bg)>.5?'rgba(255,255,255,.82)':'rgba(15,23,42,.72)');el.style.setProperty('--summaryMuted',readableTextOn(relativeLuminance(bg)>.5?'#f8fafc':'#111827',project.theme?.muted||text));el.innerHTML=`<div class="widget-head"><strong>${escapeHtml(w.title||'Widget')}</strong><button data-fullscreen="${w.id}">Full screen</button></div><div class="widget-body" id="body_${w.id}"></div>`;return el}
 function widgetRows(w){const pageFilters=(activePage()?.filters||[]).filter(f=>f.sourceId===w.sourceId);const widgetFilters=(w.filters||[]).map(f=>Object.assign({sourceId:w.sourceId},f));return applyFilters(rowsOf(w.sourceId),[...pageFilters,...widgetFilters])}
 function applyFilters(rows,filters){return rows.filter(row=>filters.every(f=>rowMatches(row,f)))}
 function rowMatches(row,f){const val=String(row[f.field]??'').trim();const target=String(f.value??'').trim();const target2=String(f.value2??'').trim();const n=numberish(row[f.field]),a=numberish(target),b=numberish(target2);const d=Date.parse(val),da=Date.parse(target),db=Date.parse(target2);switch(f.op||'equals'){case'notEquals':return val!==target;case'contains':return val.toLowerCase().includes(target.toLowerCase());case'gt':return Number.isFinite(n)&&Number.isFinite(a)&&n>a;case'gte':return Number.isFinite(n)&&Number.isFinite(a)&&n>=a;case'lt':return Number.isFinite(n)&&Number.isFinite(a)&&n<a;case'lte':return Number.isFinite(n)&&Number.isFinite(a)&&n<=a;case'between':return Number.isFinite(n)&&Number.isFinite(a)&&Number.isFinite(b)?n>=Math.min(a,b)&&n<=Math.max(a,b):Number.isFinite(d)&&Number.isFinite(da)&&Number.isFinite(db)&&d>=Math.min(da,db)&&d<=Math.max(da,db);case'before':return Number.isFinite(d)&&Number.isFinite(da)&&d<da;case'after':return Number.isFinite(d)&&Number.isFinite(da)&&d>da;default:return val===target}}
-function renderWidgetBody(w,targetId){const body=$(targetId||`body_${w.id}`);if(!body)return;const rows=widgetRows(w),base=rowsOf(w.sourceId);if(!base.length){body.innerHTML='<p>No data selected.</p>';return}if(w.type==='table')return renderTable(body,rows,colsOf(w.sourceId),base.length);if(w.type==='summary')return renderSummary(body,w,rows,base.length);if(w.type==='pivot')return renderPivot(body,w,rows,base.length);if(w.type==='kpi')return renderKpi(body,w,rows);return renderChart(body,w,rows)}
-function renderTable(el,rows,cols,total){const limitedRows=rows.slice(0,250),limitedCols=cols.slice(0,30);const note=total!==rows.length?`<p class="hint">${formatNumber(rows.length)} of ${formatNumber(total)} rows after filters.</p>`:'';el.innerHTML=`${note}<div style="overflow:auto"><table class="data-table"><thead><tr>${limitedCols.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${limitedRows.map(r=>`<tr>${limitedCols.map(c=>`<td>${escapeHtml(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${rows.length>250?'<p class="hint">Showing first 250 rows.</p>':''}`}
+function renderWidgetBody(w,targetId){const body=$(targetId||`body_${w.id}`);if(!body)return;if(w.type==='text'){body.innerHTML=`<div class="text-content">${markdownToHtml(w.content||'')}</div>`;return}const rows=widgetRows(w),base=rowsOf(w.sourceId);if(!base.length){body.innerHTML='<p>No data selected.</p>';return}if(w.type==='table')return renderTable(body,rows,colsOf(w.sourceId),base.length,w);if(w.type==='summary')return renderSummary(body,w,rows,base.length);if(w.type==='pivot')return renderPivot(body,w,rows,base.length);if(w.type==='kpi')return renderKpi(body,w,rows);return renderChart(body,w,rows)}
+function renderMarkdownish(text){let out=escapeHtml(text||'');out=out.replace(/^### (.*)$/gm,'<h3>$1</h3>').replace(/^## (.*)$/gm,'<h2>$1</h2>').replace(/^# (.*)$/gm,'<h1>$1</h1>');out=out.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');const lines=out.split('\n');let html='',list=false;for(const line of lines){if(/^[-•] /.test(line)){if(!list){html+='<ul>';list=true}html+='<li>'+line.replace(/^[-•] /,'')+'</li>'}else{if(list){html+='</ul>';list=false}if(/^<h[123]>/.test(line))html+=line;else if(line.trim())html+='<p>'+line+'</p>'}}if(list)html+='</ul>';return html||'<p></p>'}function renderTextWidget(el,w){el.innerHTML='<div class="text-content">'+renderMarkdownish(w.content||w.title||'')+'</div>'}
+function renderTable(el,rows,cols,total,w=null){const key=w?.id||el.id||'table';const view=tableViewState[key]||(tableViewState[key]={search:'',sortCol:'',sortDir:'asc',page:0,pageSize:50});const limitedCols=cols.slice(0,30);const q=String(view.search||'').toLowerCase().trim();let shown=q?rows.filter(r=>limitedCols.some(c=>String(r[c]??'').toLowerCase().includes(q))):rows.slice();if(view.sortCol){const col=view.sortCol,dir=view.sortDir==='desc'?-1:1;shown.sort((a,b)=>{const an=numberish(a[col]),bn=numberish(b[col]);if(Number.isFinite(an)&&Number.isFinite(bn))return(an-bn)*dir;return String(a[col]??'').localeCompare(String(b[col]??''),undefined,{numeric:true,sensitivity:'base'})*dir})}const totalPages=Math.max(1,Math.ceil(shown.length/view.pageSize));view.page=Math.max(0,Math.min(view.page||0,totalPages-1));const pageRows=shown.slice(view.page*view.pageSize,(view.page+1)*view.pageSize);const note=total!==rows.length?`<p class="hint">${formatNumber(rows.length)} of ${formatNumber(total)} rows after filters.</p>`:'';const searchNote=q?`<p class="hint">${formatNumber(shown.length)} row${shown.length===1?'':'s'} match table search.</p>`:'';const sortArrow=c=>view.sortCol===c?(view.sortDir==='desc'?' ▼':' ▲'):'';el.innerHTML=`${note}<div class="table-tools"><input data-table-search="${escapeAttr(key)}" placeholder="Search this table…" value="${escapeAttr(view.search||'')}"><div class="pager"><button data-table-page="${escapeAttr(key)}" data-delta="-1">Prev</button><span>Page ${view.page+1} / ${totalPages}</span><button data-table-page="${escapeAttr(key)}" data-delta="1">Next</button></div></div>${searchNote}<div style="overflow:auto"><table class="data-table"><thead><tr>${limitedCols.map(c=>`<th data-table-sort="${escapeAttr(key)}" data-col="${escapeAttr(c)}" title="Click to sort">${escapeHtml(c)}${sortArrow(c)}</th>`).join('')}</tr></thead><tbody>${pageRows.map(r=>`<tr>${limitedCols.map(c=>`<td>${escapeHtml(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="hint">Showing ${formatNumber(pageRows.length)} of ${formatNumber(shown.length)} matching rows. Tables show up to 30 columns.</p>`}
 function renderSummary(el,w,rows,total){const src=project.sources.find(s=>s.id===w.sourceId);const cols=colsOf(w.sourceId);let missing=0;rows.forEach(r=>cols.forEach(c=>{if(r[c]===''||r[c]==null)missing++}));const nums=cols.filter(c=>rows.some(r=>Number.isFinite(numberish(r[c]))));el.innerHTML=`<div class="summary-grid"><div class="summary-card"><strong>Rows shown</strong><span>${formatNumber(rows.length)}</span></div><div class="summary-card"><strong>Total rows</strong><span>${formatNumber(total)}</span></div><div class="summary-card"><strong>Columns</strong><span>${formatNumber(cols.length)}</span></div><div class="summary-card"><strong>Numeric fields</strong><span>${formatNumber(nums.length)}</span></div><div class="summary-card"><strong>Missing cells</strong><span>${formatNumber(missing)}</span></div></div><h3>Fields</h3><div class="summary-grid">${cols.map(c=>`<div class="summary-card"><strong>${escapeHtml(c)}</strong><span>${new Set(rows.map(r=>String(r[c]??''))).size} unique</span></div>`).join('')}</div>`}
 function renderPivot(el,w,rows,total){const rowField=w.dimension||colsOf(w.sourceId)[0],colField=w.pivotColumn||'',measure=w.measureCol||colsOf(w.sourceId)[0];const rowKeys=[...new Set(rows.map(r=>String(r[rowField]??'')))].sort().slice(0,60);const colKeys=colField?[...new Set(rows.map(r=>String(r[colField]??'')))].sort().slice(0,24):['Value'];const head=`<tr><th>${escapeHtml(rowField)}</th>${colKeys.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}<th>Total</th></tr>`;const body=rowKeys.map(rk=>{const rowSubset=rows.filter(r=>String(r[rowField]??'')===rk);const cells=colKeys.map(ck=>calcAgg(rowSubset.filter(r=>!colField||String(r[colField]??'')===ck),measure,w.agg,w.countIf));const totalVal=calcAgg(rowSubset,measure,w.agg,w.countIf);return`<tr><th>${escapeHtml(rk)}</th>${cells.map(v=>`<td>${escapeHtml(formatMaybeNumber(v))}</td>`).join('')}<td><strong>${escapeHtml(formatMaybeNumber(totalVal))}</strong></td></tr>`}).join('');el.innerHTML=`<div style="overflow:auto"><table class="data-table"><thead>${head}</thead><tbody>${body}</tbody></table></div><p class="hint">Pivot limits: 60 row groups and 24 column groups.</p>`}
 function renderKpi(el,w,rows){const data=aggregate(rows,Object.assign({},w,{dimension:'__all__'}));const value=data[0]?.value??0;el.innerHTML=`<div class="kpi"><div><b>${formatNumber(value)}</b><span>${escapeHtml(w.agg)} ${escapeHtml(w.measureCol||'')}</span></div></div>`}
@@ -802,17 +989,27 @@ function chartClick(elements,w,data){if(!elements?.length||!w.dimension||w.dimen
 function aggregate(rows,w){const dim=w.dimension||colsOf(w.sourceId)[0],measure=w.measureCol||colsOf(w.sourceId)[0],groups=new Map();rows.forEach(r=>{const key=dim==='__all__'?'All rows':String(r[dim]??'');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r)});const total=calcAgg(rows,measure,w.agg==='percent of total'?'sum':w.agg,w.countIf);let out=[...groups.entries()].map(([key,group])=>{let value=calcAgg(group,measure,w.agg,w.countIf);if(w.agg==='percent of total')value=total?calcAgg(group,measure,'sum',w.countIf)/total*100:0;return{key,value}});if((w.sortBy||'none')==='dimension')out.sort((a,b)=>String(a.key).localeCompare(String(b.key)));if((w.sortBy||'none')==='measure')out.sort((a,b)=>a.value-b.value);if((w.sortDir||'desc')==='desc')out.reverse();const n=Number(w.topN||0);return out.slice(0,n>0?n:60)}
 function calcAgg(group,col,agg,countIf){if(agg==='count')return group.length;if(agg==='countif')return group.filter(r=>String(r[col])===String(countIf)).length;if(agg==='count distinct')return new Set(group.map(r=>r[col])).size;if(agg==='first')return group.length?group[0][col]:'';if(agg==='last')return group.length?group[group.length-1][col]:'';const nums=group.map(r=>numberish(r[col])).filter(Number.isFinite).sort((a,b)=>a-b);if(!nums.length)return 0;if(agg==='sum'||agg==='percent of total')return nums.reduce((a,b)=>a+b,0);if(agg==='average')return nums.reduce((a,b)=>a+b,0)/nums.length;if(agg==='median'){const m=Math.floor(nums.length/2);return nums.length%2?nums[m]:(nums[m-1]+nums[m])/2}if(agg==='min')return Math.min(...nums);if(agg==='max')return Math.max(...nums);if(agg==='range')return Math.max(...nums)-Math.min(...nums);return 0}
 function openFullscreen(id){const page=activePage();const w=page?.widgets?.find(x=>x.id===id);if(!w)return;$('modalTitle').textContent=w.title||'Widget';$('modal').classList.remove('hidden');$('modalBody').innerHTML=`<div id="modal_widget_body" style="height:100%;min-height:480px"></div>`;renderWidgetBody(w,'modal_widget_body')}
-$('projectFile').addEventListener('change',e=>{if(e.target.files[0])readFile(e.target.files[0])});$('projectFileBig').addEventListener('change',e=>{if(e.target.files[0])readFile(e.target.files[0])});$('pageTabs').addEventListener('click',e=>{const id=e.target.closest('[data-page]')?.dataset.page;if(id){activePageId=id;renderAll()}});$('pageSelect').addEventListener('change',e=>{activePageId=e.target.value;renderAll()});$('filterSource').addEventListener('change',renderFilters);$('filterField').addEventListener('change',renderFilterValueOptions);$('addFilterBtn').addEventListener('click',()=>{const p=activePage();if(!p)return;const field=$('filterField').value,value=$('filterValue').value;if(!field)return toast('Choose a field');if(value===''&&!uniqueValuesFor($('filterSource').value,field,1).includes(''))return toast('Choose a value');p.filters=p.filters||[];p.filters.push({id:'vf_'+Math.random().toString(36).slice(2),sourceId:$('filterSource').value,field,op:'equals',value,value2:''});$('filterValue').value='';renderAll()});$('filterChips').addEventListener('click',e=>{const id=e.target.closest('[data-remove-filter]')?.dataset.removeFilter;if(!id)return;const p=activePage();p.filters=(p.filters||[]).filter(f=>f.id!==id);renderAll()});$('resetFiltersBtn').addEventListener('click',()=>{(project?.pages||[]).forEach(p=>p.filters=[]);renderAll();toast('Filters reset')});$('canvas').addEventListener('click',e=>{const id=e.target.closest('[data-fullscreen]')?.dataset.fullscreen;if(id)openFullscreen(id)});$('closeModal').addEventListener('click',()=>$('modal').classList.add('hidden'));$('modal').addEventListener('click',e=>{if(e.target.id==='modal')$('modal').classList.add('hidden')});document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.add('hidden')});
-async function loadProjectFromUrlParam(){const params=new URLSearchParams(location.search);const url=params.get('project')||params.get('src');if(!url)return false;try{const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);loadProject(await res.json());toast('Project loaded from link');return true}catch(err){console.error(err);toast('Could not load project link');return false}}
-(async function initViewer(){try{const b64=window.DATABENCH_EMBEDDED_B64;if(b64&&b64!=='__DATABENCH_PROJECT_B64__'){loadProject(JSON.parse(decodeB64Unicode(b64)));return}}catch(err){console.error(err);toast('Could not load embedded project')}await loadProjectFromUrlParam();})();
+function goPage(delta){const pages=project?.pages||[];if(!pages.length)return;let i=pages.findIndex(p=>p.id===activePageId);if(i<0)i=0;i=(i+delta+pages.length)%pages.length;activePageId=pages[i].id;renderAll();}
+function toggleFilterDrawer(open){const panel=$('filterPanel'),back=$('filterBackdrop');if(!panel||!back)return;const should=open==null?!panel.classList.contains('open'):open;panel.classList.toggle('open',should);back.classList.toggle('hidden',!should)}
+function togglePresentation(force){const on=force==null?!document.body.classList.contains('presentation'):force;document.body.classList.toggle('presentation',on);$('presentationBar')?.classList.toggle('hidden',!on);if(on&&document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}if(!on&&document.fullscreenElement){document.exitFullscreen().catch(()=>{});}toast(on?'Presentation mode':'Presentation ended')}
+function openShare(){const url=location.href;const qr='https://api.qrserver.com/v1/create-qr-code/?size=260x260&data='+encodeURIComponent(url);$('modalTitle').textContent='Share viewer';$('modal').classList.remove('hidden');document.querySelector('.modal-card')?.classList.add('share-card');$('modalBody').innerHTML=`<div class="share-grid"><div><label>Viewer link</label><input id="shareUrl" value="${escapeHtml(url)}" readonly></div><button id="copyShareBtn" class="primary">Copy Link</button></div><p class="hint">For a hosted project, use a URL like <code>/databench/viewer/?project=../projects/example.databench.json</code>. Standalone exports can be shared as the HTML file itself.</p><div class="qr-box"><img alt="QR code for viewer link" src="${qr}"></div><p class="hint">QR image uses a public QR service and needs internet access.</p>`;setTimeout(()=>{$('copyShareBtn')?.addEventListener('click',()=>{navigator.clipboard?.writeText($('shareUrl').value);toast('Viewer link copied')})},0)}
+function loadLocalPreview(){try{const raw=localStorage.getItem('databench.viewer.preview');if(!raw)return false;loadProject(JSON.parse(raw));toast('Preview loaded from editor');return true}catch(err){console.error(err);toast('Could not load editor preview');return false}}
+
+$('projectFile').addEventListener('change',e=>{if(e.target.files[0])readFile(e.target.files[0])});$('projectFileBig').addEventListener('change',e=>{if(e.target.files[0])readFile(e.target.files[0])});$('pageTabs').addEventListener('click',e=>{const id=e.target.closest('[data-page]')?.dataset.page;if(id){activePageId=id;renderAll()}});$('pageSelect').addEventListener('change',e=>{activePageId=e.target.value;renderAll()});$('filterSource').addEventListener('change',renderFilters);$('filterField').addEventListener('change',renderFilterValueOptions);$('addFilterBtn').addEventListener('click',()=>{const p=activePage();if(!p)return;const field=$('filterField').value,value=$('filterValue').value;if(!field)return toast('Choose a field');if(value===''&&!uniqueValuesFor($('filterSource').value,field,1).includes(''))return toast('Choose a value');p.filters=p.filters||[];p.filters.push({id:'vf_'+Math.random().toString(36).slice(2),sourceId:$('filterSource').value,field,op:'equals',value,value2:''});$('filterValue').value='';toggleFilterDrawer(false);renderAll()});$('filterChips').addEventListener('click',e=>{const id=e.target.closest('[data-remove-filter]')?.dataset.removeFilter;if(!id)return;const p=activePage();p.filters=(p.filters||[]).filter(f=>f.id!==id);renderAll()});document.addEventListener('input',e=>{const key=e.target.dataset?.tableSearch;if(!key)return;tableViewState[key]=tableViewState[key]||{search:'',sortCol:'',sortDir:'asc',page:0,pageSize:50};tableViewState[key].search=e.target.value;tableViewState[key].page=0;renderCanvas()});document.addEventListener('click',e=>{const pageKey=e.target.dataset?.tablePage;if(pageKey){tableViewState[pageKey]=tableViewState[pageKey]||{search:'',sortCol:'',sortDir:'asc',page:0,pageSize:50};tableViewState[pageKey].page+=Number(e.target.dataset.delta||0);renderCanvas()}const sortKey=e.target.dataset?.tableSort;if(sortKey){const col=e.target.dataset.col;const v=tableViewState[sortKey]||(tableViewState[sortKey]={search:'',sortCol:'',sortDir:'asc',page:0,pageSize:50});if(v.sortCol===col)v.sortDir=v.sortDir==='asc'?'desc':'asc';else{v.sortCol=col;v.sortDir='asc'}v.page=0;renderCanvas()}});$('resetFiltersBtn').addEventListener('click',()=>{(project?.pages||[]).forEach(p=>p.filters=[]);renderAll();toast('Filters reset')});$('canvas').addEventListener('click',e=>{const id=e.target.closest('[data-fullscreen]')?.dataset.fullscreen;if(id)openFullscreen(id)});$('closeModal').addEventListener('click',()=>{$('modal').classList.add('hidden');document.querySelector('.modal-card')?.classList.remove('share-card')});$('modal').addEventListener('click',e=>{if(e.target.id==='modal'){$('modal').classList.add('hidden');document.querySelector('.modal-card')?.classList.remove('share-card')}});document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.add('hidden')});
+$('filterToggleBtn')?.addEventListener('click',()=>toggleFilterDrawer());$('filterBackdrop')?.addEventListener('click',()=>toggleFilterDrawer(false));$('presentBtn')?.addEventListener('click',()=>togglePresentation());$('exitPresentBtn')?.addEventListener('click',()=>togglePresentation(false));$('presentPrevBtn')?.addEventListener('click',()=>goPage(-1));$('presentNextBtn')?.addEventListener('click',()=>goPage(1));$('shareBtn')?.addEventListener('click',openShare);let touchStartX=0,touchStartY=0;$('canvas')?.addEventListener('touchstart',e=>{const t=e.changedTouches[0];touchStartX=t.clientX;touchStartY=t.clientY},{passive:true});$('canvas')?.addEventListener('touchend',e=>{const t=e.changedTouches[0];const dx=t.clientX-touchStartX,dy=t.clientY-touchStartY;if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.5)goPage(dx<0?1:-1)},{passive:true});document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&document.body.classList.contains('presentation'))togglePresentation(false)});
+async function loadProjectFromUrlParam(){const params=new URLSearchParams(location.search);if(params.get('source')==='local'||params.get('project')==='local'){return loadLocalPreview()}const url=params.get('project')||params.get('src');if(!url)return false;try{const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);loadProject(await res.json());toast('Project loaded from link');return true}catch(err){console.error(err);toast('Could not load project link');return false}}
+async function loadDefaultHostedProject(){const url=window.DATABENCH_DEFAULT_PROJECT_URL;if(!url)return false;try{const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);loadProject(await res.json());toast('Hosted project loaded');return true}catch(err){console.error(err);toast('Could not load hosted project');return false}}
+(async function initViewer(){try{const b64=window.DATABENCH_EMBEDDED_B64;if(b64&&b64!=='__DATABENCH_PROJECT_B64__'){loadProject(JSON.parse(decodeB64Unicode(b64)));return}}catch(err){console.error(err);toast('Could not load embedded project')}const loadedFromParam=await loadProjectFromUrlParam();if(!loadedFromParam)await loadDefaultHostedProject();})();
 </script>
 </body>
 </html>
 
-  </template>
+</template>
 
 <script>
-const APP_VERSION = '1.4.4';
+const APP_VERSION = '2.0.0';
+const PROJECT_SCHEMA_VERSION = 8;
+const WIDGET_REGISTRY_VERSION = 1;
 const AUTOSAVE_KEY = 'databench_autosave_current';
 const AUTOSAVE_LEGACY_KEYS = ['databench_autosave_v133','databench_autosave_v132','databench_autosave_v131','databench_autosave_v13','databench_autosave_v12','databench_autosave_v11','databench_autosave_v10'];
 const PANEL_PREF_KEY = 'databench_panel_prefs_v133';
@@ -826,23 +1023,61 @@ const state = {
   projectName: 'Untitled DataBench Project',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
-  schemaVersion: 3,
+  schemaVersion: PROJECT_SCHEMA_VERSION,
   sources: [],
   pages: [],
   activePageId: null,
   selectedWidgetId: null,
   globalFilters: [],
   relationships: [],
+  design: { snapToGrid: true, gridSize: 24 },
   theme: {
     preset:'dark', name:'Dark Professional', accent:'#38bdf8', accent2:'#a78bfa', bg:'#0f172a', panel:'#111827', panel2:'#1f2937', text:'#e5e7eb', muted:'#94a3b8', border:'rgba(255,255,255,.12)', canvas:'#f8fafc', card:'#ffffff', canvasGrid:'#e2e8f0', shadow:'0 10px 30px rgba(0,0,0,.25)'
-  }
+  },
+  settings: { snapToGrid:true, gridSize:24, pagePreset:'desktop', pageWidth:1280, pageHeight:780 }
 };
 const charts = new Map();
+const tableViewState = {};
 let historyStack = [];
 let redoStack = [];
 let restoringHistory = false;
 const $ = id => document.getElementById(id);
 const uid = prefix => `${prefix}_${Math.random().toString(36).slice(2,9)}`;
+
+const WIDGET_REGISTRY = {
+  table: { label:'Table', category:'Data', defaultSize:{w:560,h:340}, defaults:{ title:'Table' } },
+  summary: { label:'Data Summary', category:'Data', defaultSize:{w:520,h:330}, defaults:{ title:'Data Summary' } },
+  pivot: { label:'Pivot Table', category:'Analysis', defaultSize:{w:620,h:380}, defaults:{ title:'Pivot Table', agg:'sum', pivotColumn:'' } },
+  kpi: { label:'KPI', category:'Analysis', defaultSize:{w:320,h:220}, defaults:{ title:'KPI', agg:'sum' } },
+  bar: { label:'Bar Chart', category:'Chart', defaultSize:{w:520,h:330}, defaults:{ title:'Bar Chart', agg:'sum', sortBy:'measure', sortDir:'desc', topN:0 } },
+  horizontalBar: { label:'Horizontal Bar Chart', category:'Chart', defaultSize:{w:560,h:340}, defaults:{ title:'Horizontal Bar Chart', agg:'sum', sortBy:'measure', sortDir:'desc', topN:10 } },
+  line: { label:'Line Chart', category:'Chart', defaultSize:{w:560,h:330}, defaults:{ title:'Line Chart', agg:'sum', sortBy:'dimension', sortDir:'asc', topN:0 } },
+  pie: { label:'Pie Chart', category:'Chart', defaultSize:{w:440,h:330}, defaults:{ title:'Pie Chart', agg:'sum', sortBy:'measure', sortDir:'desc', topN:8 } },
+  donut: { label:'Donut Chart', category:'Chart', defaultSize:{w:440,h:330}, defaults:{ title:'Donut Chart', agg:'sum', sortBy:'measure', sortDir:'desc', topN:8 } },
+  scatter: { label:'Scatter Chart', category:'Chart', defaultSize:{w:540,h:330}, defaults:{ title:'Scatter Chart', agg:'sum' } },
+  text: { label:'Text / Markdown', category:'Annotation', defaultSize:{w:420,h:220}, defaults:{ title:'Text', content:'## Notes\nAdd context here.' } }
+};
+function widgetSpec(type) { return WIDGET_REGISTRY[type] || null; }
+function normalizeWidgetRecord(w) {
+  if (!w || !w.type) return w;
+  const spec = widgetSpec(w.type);
+  if (!spec) { w.unsupported = true; return w; }
+  const original = Object.assign({}, w);
+  Object.assign(w, spec.defaults || {}, original);
+  if (w.w == null) w.w = spec.defaultSize?.w || 420;
+  if (w.h == null) w.h = spec.defaultSize?.h || 300;
+  if (w.x == null) w.x = 24;
+  if (w.y == null) w.y = 80;
+  w.filters = w.filters || [];
+  w.registryVersion = w.registryVersion || WIDGET_REGISTRY_VERSION;
+  return w;
+}
+function widgetRegistrySummary() {
+  const entries = Object.entries(WIDGET_REGISTRY);
+  const byCategory = entries.reduce((acc,[,spec]) => { acc[spec.category] = (acc[spec.category] || 0) + 1; return acc; }, {});
+  return { version: WIDGET_REGISTRY_VERSION, count: entries.length, categories: byCategory };
+}
+
 
 const THEME_PRESETS = {
   light: { name:'Light Professional', accent:'#2563eb', accent2:'#7c3aed', bg:'#f8fafc', panel:'#ffffff', panel2:'#eef2ff', text:'#0f172a', muted:'#64748b', border:'rgba(15,23,42,.14)', canvas:'#f8fafc', card:'#ffffff', canvasGrid:'#e2e8f0', shadow:'0 10px 30px rgba(15,23,42,.14)' },
@@ -935,11 +1170,11 @@ function addSource(name, rows, kind='upload') {
   const source = { id: uid('src'), name, kind, columns, rows, fields, calculatedFields: [], profile: profileSource(rows, columns, fields) };
   state.sources.push(source);
 
-  const tablePage = { id: uid('page'), title: `Table: ${name}`, widgets: [] };
+  const tablePage = { id: uid('page'), title: `Table: ${name}`, filters: [], width: state.settings?.pageWidth || 1280, height: state.settings?.pageHeight || 780, preset: state.settings?.pagePreset || 'desktop', widgets: [] };
   tablePage.widgets.push(defaultWidget({ type: 'table', sourceId: source.id, title: name, x: 28, y: 72, w: 1120, h: 560 }));
   state.pages.push(tablePage);
 
-  const summaryPage = { id: uid('page'), title: `Summary: ${name}`, widgets: [] };
+  const summaryPage = { id: uid('page'), title: `Summary: ${name}`, filters: [], width: state.settings?.pageWidth || 1280, height: state.settings?.pageHeight || 780, preset: state.settings?.pagePreset || 'desktop', widgets: [] };
   summaryPage.widgets.push(defaultWidget({ type: 'summary', sourceId: source.id, title: `Data Summary: ${name}`, x: 28, y: 72, w: 1120, h: 560 }));
   state.pages.push(summaryPage);
 
@@ -986,6 +1221,135 @@ function profileSource(rows, columns, fields) {
     possibleKeys: fields.filter(f => f.possibleKey).map(f => f.name),
     missingCells: fields.reduce((a,f) => a + f.missing, 0)
   };
+}
+
+function refreshSourceMetadata(src) {
+  if (!src) return;
+  src.columns = Array.from(new Set((src.rows || []).flatMap(r => Object.keys(r))));
+  src.fields = inferFields(src.rows || [], src.columns || []).map(f => {
+    const calc = (src.calculatedFields || []).find(c => c.name === f.name);
+    return calc ? Object.assign(f, { calculated:true, formula:calc.formula }) : f;
+  });
+  src.profile = profileSource(src.rows || [], src.columns || [], src.fields || []);
+  src._calcSig = null;
+}
+function excelSerialToDate(v) {
+  const n = numberish(v);
+  if (!Number.isFinite(n)) return '';
+  const d = new Date(Math.round((n - 25569) * 86400 * 1000));
+  if (isNaN(d)) return '';
+  return d.toISOString().slice(0,10);
+}
+function coerceFieldValue(v, type) {
+  const blank = String(v ?? '').trim() === '';
+  if (blank) return '';
+  if (type === 'text') return String(v ?? '');
+  if (type === 'number') { const n = numberish(v); return Number.isFinite(n) ? n : ''; }
+  if (type === 'boolean') { const s = String(v).trim().toLowerCase(); if (['true','yes','y','1'].includes(s)) return true; if (['false','no','n','0'].includes(s)) return false; return ''; }
+  if (type === 'date') {
+    const n = numberish(v);
+    if (Number.isFinite(n) && n > 20000 && n < 80000) return excelSerialToDate(n);
+    const d = new Date(v);
+    return isNaN(d) ? '' : d.toISOString().slice(0,10);
+  }
+  return v;
+}
+function topValues(rows, field, limit=6) {
+  const counts = new Map();
+  rows.forEach(r => { const k = String(r[field] ?? '').trim() || '(blank)'; counts.set(k, (counts.get(k) || 0) + 1); });
+  return [...counts.entries()].sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0])).slice(0, limit);
+}
+function fieldProfileHtml(src, fieldName) {
+  if (!src || !fieldName) return '<p class="hint">Choose a data source and field.</p>';
+  refreshSourceMetadata(src);
+  const f = src.fields.find(x => x.name === fieldName) || inferField(src.rows, fieldName);
+  const values = src.rows.map(r => r[fieldName]);
+  const nonBlank = values.filter(v => String(v ?? '').trim() !== '');
+  const nums = values.map(numberish).filter(Number.isFinite);
+  const dates = values.map(v => {
+    if (Number.isFinite(numberish(v)) && numberish(v) > 20000 && numberish(v) < 80000) return new Date((numberish(v)-25569)*86400*1000);
+    const d = new Date(v); return isNaN(d) ? null : d;
+  }).filter(Boolean).sort((a,b)=>a-b);
+  const top = topValues(src.rows, fieldName, 6);
+  const maxTop = Math.max(1, ...top.map(x=>x[1]));
+  const maybeExcelDate = nums.length && nums.length / Math.max(1, nonBlank.length) > .85 && nums.every(n => n > 20000 && n < 80000);
+  const numberLine = f.type === 'number' && nums.length ? `<dt>Min / max</dt><dd>${formatNumber(Math.min(...nums))} / ${formatNumber(Math.max(...nums))}</dd><dt>Average</dt><dd>${formatNumber(nums.reduce((a,b)=>a+b,0)/nums.length)}</dd>` : '';
+  const dateLine = dates.length ? `<dt>Date range</dt><dd>${dates[0].toISOString().slice(0,10)} → ${dates[dates.length-1].toISOString().slice(0,10)}</dd>` : '';
+  return `<h3>${escapeHtml(fieldName)}</h3><dl><dt>Detected type</dt><dd>${escapeHtml(f.type)}</dd><dt>Suggested role</dt><dd>${escapeHtml(f.role)}</dd><dt>Rows</dt><dd>${formatNumber(values.length)}</dd><dt>Blank values</dt><dd>${formatNumber(f.missing)}</dd><dt>Unique values</dt><dd>${formatNumber(f.unique)}</dd><dt>Possible key</dt><dd>${f.possibleKey?'Yes':'No'}</dd>${numberLine}${dateLine}${maybeExcelDate ? '<dt>Excel serial dates?</dt><dd>Likely</dd>' : ''}</dl><strong>Top values</strong><div class="mini-bars">${top.map(([k,c]) => `<div class="mini-bar"><span title="${escapeAttr(k)}">${escapeHtml(k)}</span><b>${formatNumber(c)}</b><div class="mini-bar-track"><div class="mini-bar-fill" style="width:${Math.max(4,(c/maxTop)*100)}%"></div></div></div>`).join('')}</div>`;
+}
+function renderDataPrepControls() {
+  const srcSel = $('prepSource'), fieldSel = $('prepField'), panel = $('fieldProfilePanel');
+  if (!srcSel || !fieldSel || !panel) return;
+  const previousSource = srcSel.value || state.sources[0]?.id || '';
+  srcSel.innerHTML = state.sources.map(s => `<option value="${escapeAttr(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+  srcSel.value = state.sources.some(s => s.id === previousSource) ? previousSource : (state.sources[0]?.id || '');
+  const src = state.sources.find(s => s.id === srcSel.value);
+  const previousField = fieldSel.value || src?.columns?.[0] || '';
+  fieldSel.innerHTML = (src?.columns || []).map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
+  fieldSel.value = (src?.columns || []).includes(previousField) ? previousField : (src?.columns?.[0] || '');
+  const f = src?.fields?.find(x => x.name === fieldSel.value);
+  if ($('prepType') && f) $('prepType').value = f.type || 'text';
+  panel.innerHTML = src ? fieldProfileHtml(src, fieldSel.value) : 'Load data, then choose a field to see type, blanks, uniques, ranges, and top values.';
+}
+function selectedPrepSource() { return state.sources.find(s => s.id === $('prepSource')?.value); }
+function updateDataPrepProfile() {
+  const src = selectedPrepSource();
+  const field = $('prepField')?.value;
+  if ($('fieldProfilePanel')) $('fieldProfilePanel').innerHTML = src ? fieldProfileHtml(src, field) : 'No data source selected.';
+}
+function renameField() {
+  const src = selectedPrepSource(); const oldName = $('prepField')?.value;
+  if (!src || !oldName) return toast('Choose a field to rename.');
+  const next = prompt('Rename field:', oldName);
+  const newName = String(next || '').trim();
+  if (!newName || newName === oldName) return;
+  if (src.columns.includes(newName)) return toast('A field with that name already exists.');
+  src.rows.forEach(r => { r[newName] = r[oldName]; delete r[oldName]; });
+  src.columns = src.columns.map(c => c === oldName ? newName : c);
+  (src.calculatedFields || []).forEach(c => { if (c.name === oldName) c.name = newName; });
+  state.pages.forEach(p => { (p.filters || []).forEach(f => { if (f.field === oldName) f.field = newName; }); (p.widgets || []).forEach(w => { ['dimension','measureCol','pivotColumn','countIf'].forEach(k => { if (w[k] === oldName) w[k] = newName; }); (w.filters || []).forEach(f => { if (f.field === oldName) f.field = newName; }); if (w.title === oldName) w.title = newName; }); });
+  refreshSourceMetadata(src); renderAll(); $('prepField').value = newName; updateDataPrepProfile(); toast('Field renamed.');
+}
+function applyPrepType() {
+  const src = selectedPrepSource(); const field = $('prepField')?.value; const type = $('prepType')?.value;
+  if (!src || !field || !type) return toast('Choose a field and type.');
+  src.rows.forEach(r => { r[field] = coerceFieldValue(r[field], type); });
+  refreshSourceMetadata(src); renderAll(); toast(`${field} converted to ${type}.`);
+}
+function convertPrepExcelDates() {
+  const src = selectedPrepSource(); const field = $('prepField')?.value;
+  if (!src || !field) return toast('Choose a field.');
+  let changed = 0;
+  src.rows.forEach(r => { const n = numberish(r[field]); if (Number.isFinite(n) && n > 20000 && n < 80000) { r[field] = excelSerialToDate(n); changed++; } });
+  refreshSourceMetadata(src); renderAll(); toast(`Converted ${formatNumber(changed)} Excel serial date values.`);
+}
+function trimPrepField() {
+  const src = selectedPrepSource(); const field = $('prepField')?.value;
+  if (!src || !field) return toast('Choose a field.');
+  src.rows.forEach(r => { if (typeof r[field] === 'string') r[field] = r[field].trim(); });
+  refreshSourceMetadata(src); renderAll(); toast('Text trimmed.');
+}
+function replacePrepBlanks() {
+  const src = selectedPrepSource(); const field = $('prepField')?.value;
+  if (!src || !field) return toast('Choose a field.');
+  const replacement = prompt(`Replace blank values in ${field} with:`, 'Unknown');
+  if (replacement === null) return;
+  let changed = 0;
+  src.rows.forEach(r => { if (String(r[field] ?? '').trim() === '') { r[field] = replacement; changed++; } });
+  refreshSourceMetadata(src); renderAll(); toast(`Replaced ${formatNumber(changed)} blank value${changed===1?'':'s'}.`);
+}
+function removeEmptyRows() {
+  const src = selectedPrepSource(); if (!src) return toast('Choose a data source.');
+  const before = src.rows.length;
+  src.rows = src.rows.filter(r => src.columns.some(c => String(r[c] ?? '').trim() !== ''));
+  refreshSourceMetadata(src); renderAll(); toast(`Removed ${formatNumber(before - src.rows.length)} empty row${before-src.rows.length===1?'':'s'}.`);
+}
+function removeDuplicateRows() {
+  const src = selectedPrepSource(); if (!src) return toast('Choose a data source.');
+  const seen = new Set(); const kept = [];
+  src.rows.forEach(r => { const sig = JSON.stringify(src.columns.map(c => r[c] ?? '')); if (!seen.has(sig)) { seen.add(sig); kept.push(r); } });
+  const removed = src.rows.length - kept.length; src.rows = kept;
+  refreshSourceMetadata(src); renderAll(); toast(`Removed ${formatNumber(removed)} duplicate row${removed===1?'':'s'}.`);
 }
 
 function makeFieldIdentifier(name) {
@@ -1077,10 +1441,26 @@ function defaultWidget(overrides={}) {
   return Object.assign({
     id: uid('w'), title: 'New Widget', type: 'bar', sourceId: state.sources[0]?.id || null,
     x: 70, y: 90, w: 520, h: 330, dimension: '', pivotColumn: '', measureCol: '', agg: 'sum', countIf: '',
-    colors: ['#38bdf8','#a78bfa','#34d399','#f59e0b','#fb7185','#60a5fa'], bg: state.theme.card, text: '#0f172a', sortBy: 'measure', sortDir: 'desc', topN: 0, filters: []
+    colors: ['#38bdf8','#a78bfa','#34d399','#f59e0b','#fb7185','#60a5fa'], bg: state.theme.card, text: '#0f172a', content:'# Note\nAdd context, instructions, or commentary here.', sortBy: 'measure', sortDir: 'desc', topN: 0, filters: []
   }, overrides);
 }
-function activePage() { return state.pages.find(p => p.id === state.activePageId); }
+
+const PAGE_PRESETS = {
+  desktop:{label:'Desktop canvas',width:1280,height:780},
+  wide:{label:'16:9 dashboard',width:1366,height:768},
+  fourThree:{label:'4:3 slide',width:1024,height:768},
+  letter:{label:'Letter page',width:816,height:1056},
+  a4:{label:'A4 page',width:794,height:1123},
+  mobile:{label:'Mobile card stack',width:390,height:844}
+};
+function currentGridSize(){return Math.max(4,Math.min(96,Number(state.settings?.gridSize||24)));}
+function snapValue(v){const g=currentGridSize();return Math.round(Number(v||0)/g)*g;}
+function maybeSnap(v){return state.settings?.snapToGrid?snapValue(v):Math.round(Number(v||0));}
+function ensurePageLayout(page){if(!page)return;page.width=Number(page.width||state.settings?.pageWidth||1280);page.height=Number(page.height||state.settings?.pageHeight||780);page.preset=page.preset||state.settings?.pagePreset||'desktop';page.filters=page.filters||[];page.widgets=page.widgets||[];}
+function pageWidth(page=activePage()){return Number(page?.width||state.settings?.pageWidth||1280);}
+function pageHeight(page=activePage()){return Number(page?.height||state.settings?.pageHeight||780);}
+
+function activePage() { const p = state.pages.find(p => p.id === state.activePageId); ensurePageLayout(p); return p; }
 function selectedWidget() {
   const page = activePage();
   return page?.widgets.find(w => w.id === state.selectedWidgetId);
@@ -1089,7 +1469,7 @@ function selectedWidget() {
 let isRendering = false;
 function renderAll() {
   isRendering = true;
-  applyTheme(); renderSourceList(); renderCalcControls(); renderJoinControls(); renderPages(); renderCanvas(); renderInspector(); renderFields(); renderFilterControls(); updateHistoryButtons(); queueAutosave(); commitHistory();
+  applyTheme(); renderSourceList(); renderDataPrepControls(); renderCalcControls(); renderJoinControls(); renderPages(); renderCanvas(); renderInspector(); renderFields(); renderFilterControls(); syncLayoutControls(); updateHistoryButtons(); queueAutosave(); commitHistory();
   isRendering = false;
 }
 function applyTheme() {
@@ -1115,6 +1495,7 @@ function applyTheme() {
   set('bgColor', t.bg); set('panelColor', t.panel); set('panel2Color', t.panel2);
   set('textColor', t.text); set('mutedColor', t.muted);
   set('canvasColor', t.canvas); set('cardColor', t.card); set('canvasGridColor', t.canvasGrid || t.accent);
+  renderThemeContrastReport();
 }
 function renderSourceList() {
   $('sourceList').innerHTML = state.sources.map(s => `<div class="list-item ${s.id === selectedWidget()?.sourceId ? 'active' : ''}" data-source="${s.id}"><strong>${escapeHtml(s.name)}</strong><span>${s.rows.length} rows · ${s.columns.length} fields · ${s.kind}${s.profile?.possibleKeys?.length ? ' · possible key: ' + escapeHtml(s.profile.possibleKeys[0]) : ''}</span></div>`).join('') || '<p class="hint">No files loaded.</p>';
@@ -1221,6 +1602,26 @@ function createJoinedSource(rel) {
   addSource(label, rows, 'joined');
   toast(`Created joined table with ${rows.length} rows.`);
 }
+
+
+function markdownToHtml(md='') {
+  const src = String(md || '');
+  const lines = src.split(/\r?\n/);
+  let html = '', inList = false;
+  const inline = t => escapeHtml(t).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/`(.+?)`/g,'<code>$1</code>').replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+  for (const line of lines) {
+    if (/^\s*[-*]\s+/.test(line)) { if (!inList) { html += '<ul>'; inList = true; } html += `<li>${inline(line.replace(/^\s*[-*]\s+/,''))}</li>`; continue; }
+    if (inList) { html += '</ul>'; inList = false; }
+    if (/^###\s+/.test(line)) html += `<h3>${inline(line.replace(/^###\s+/,''))}</h3>`;
+    else if (/^##\s+/.test(line)) html += `<h2>${inline(line.replace(/^##\s+/,''))}</h2>`;
+    else if (/^#\s+/.test(line)) html += `<h1>${inline(line.replace(/^#\s+/,''))}</h1>`;
+    else if (line.trim()) html += `<p>${inline(line)}</p>`;
+    else html += '<br>';
+  }
+  if (inList) html += '</ul>';
+  return html;
+}
+
 function renderPages() {
   $('pagesBar').innerHTML = state.pages.map(p => `<button class="tab ${p.id===state.activePageId?'active':''}" data-page="${p.id}">${escapeHtml(p.title)}</button>`).join('') + '<button id="miniAddPage" class="tab">+ Page</button>';
 }
@@ -1228,7 +1629,11 @@ function renderCanvas() {
   for (const c of charts.values()) c.destroy(); charts.clear();
   const canvas = $('canvas');
   const page = activePage();
-  if (!page) { canvas.innerHTML = '<div class="empty"><div><h2>Upload a data file to begin.</h2><p>Default pages will be generated with a table for each uploaded file.</p></div></div>'; return; }
+  if (!page) { canvas.style.width='1280px'; canvas.style.minHeight='780px'; canvas.innerHTML = '<div class="empty"><div><h2>Upload a data file to begin.</h2><p>Default pages will be generated with a table for each uploaded file.</p></div></div>'; return; }
+  ensurePageLayout(page);
+  canvas.style.width = `${page.width}px`;
+  canvas.style.minHeight = `${page.height}px`;
+  canvas.style.backgroundSize = `${currentGridSize()}px ${currentGridSize()}px`;
   canvas.innerHTML = `<div class="canvas-title"><input id="pageTitleInput" value="${escapeAttr(page.title)}"><button id="renamePageBtn" class="small">Rename Page</button></div>${renderFilterBanner(page)}`;
   page.widgets.forEach(w => canvas.appendChild(renderWidget(w)));
   page.widgets.forEach(w => renderWidgetContents(w));
@@ -1262,7 +1667,7 @@ function openWidgetEditor(id) {
 
 function renderWidget(w) {
   const el = document.createElement('div');
-  el.className = `widget ${w.id === state.selectedWidgetId ? 'active' : ''}`;
+  el.className = `widget ${w.type}-widget ${w.id === state.selectedWidgetId ? 'active' : ''}`;
   el.dataset.widget = w.id;
   el.style.left = `${w.x}px`; el.style.top = `${w.y}px`; el.style.width = `${w.w}px`; el.style.height = `${w.h}px`;
   el.style.background = w.bg || state.theme.card; el.style.color = w.text || '#0f172a';
@@ -1286,10 +1691,12 @@ function renderWidget(w) {
 }
 function renderWidgetContents(w) {
   const body = $(`body_${w.id}`); if (!body) return;
+  if (w.type === 'text') return renderTextWidget(body, w);
+  if (w.type === 'text') { body.innerHTML = `<div class="text-content">${markdownToHtml(w.content || '')}</div>`; return; }
   const baseRows = rowsOf(w.sourceId);
   if (!baseRows.length) { body.innerHTML = '<p>No data selected.</p>'; return; }
   const rows = filteredRowsForWidget(w);
-  if (w.type === 'table') return renderTable(body, rows, columnsOf(w.sourceId), baseRows.length);
+  if (w.type === 'table') return renderTable(body, rows, columnsOf(w.sourceId), baseRows.length, w);
   if (w.type === 'summary') return renderSummary(body, w.sourceId, rows, baseRows.length);
   if (w.type === 'pivot') return renderPivotTable(body, w, rows, baseRows.length);
   if (w.type === 'kpi') return renderKpi(body, w, rows);
@@ -1307,10 +1714,39 @@ function renderWidgetContents(w) {
     options: { responsive: true, maintainAspectRatio: false, onClick: (evt, elements, chart) => chartClickFilter(evt, elements, chart, w, data), plugins: { legend: { display: ['pie','donut'].includes(w.type) }, title: { display: false }, tooltip: { callbacks: { footer: () => w.dimension ? 'Click to filter this page' : '' } } }, indexAxis: w.type === 'horizontalBar' ? 'y' : 'x', scales: ['pie','donut'].includes(w.type) ? {} : { y: { beginAtZero: true } } }
   }));
 }
-function renderTable(container, rows, cols, totalRows=rows.length) {
-  const limitedRows = rows.slice(0, 250), limitedCols = cols.slice(0, 30);
-  const filteredNote = totalRows !== rows.length ? `<p>${formatNumber(rows.length)} of ${formatNumber(totalRows)} rows after filters.</p>` : '';
-  container.innerHTML = `${filteredNote}<table class="data-table"><thead><tr>${limitedCols.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${limitedRows.map(r=>`<tr>${limitedCols.map(c=>`<td>${escapeHtml(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>${rows.length>250?'<p>Showing first 250 rows.</p>':''}`;
+
+function renderMarkdownish(text){
+  let out=escapeHtml(text||'Double-click or use the inspector to edit this note.');
+  out=out.replace(/^### (.*)$/gm,'<h3>$1</h3>').replace(/^## (.*)$/gm,'<h2>$1</h2>').replace(/^# (.*)$/gm,'<h1>$1</h1>');
+  out=out.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');
+  const lines=out.split('\n'); let html='',list=false;
+  for(const line of lines){if(/^[-•] /.test(line)){if(!list){html+='<ul>';list=true;}html+='<li>'+line.replace(/^[-•] /,'')+'</li>';}else{if(list){html+='</ul>';list=false;}if(/^<h[123]>/.test(line))html+=line;else if(line.trim())html+='<p>'+line+'</p>';}}
+  if(list)html+='</ul>'; return html;
+}
+function renderTextWidget(container,w){container.innerHTML=`<div class="text-content">${renderMarkdownish(w.content||'')}</div>`;}
+
+function renderTable(container, rows, cols, totalRows=rows.length, w=null) {
+  const key = w?.id || container.id || 'table';
+  const view = tableViewState[key] || (tableViewState[key] = { search:'', sortCol:'', sortDir:'asc', page:0, pageSize:50 });
+  const limitedCols = cols.slice(0, 30);
+  const q = String(view.search || '').toLowerCase().trim();
+  let shown = q ? rows.filter(r => limitedCols.some(c => String(r[c] ?? '').toLowerCase().includes(q))) : rows.slice();
+  if (view.sortCol) {
+    const col = view.sortCol;
+    const dir = view.sortDir === 'desc' ? -1 : 1;
+    shown.sort((a,b) => {
+      const an = numberish(a[col]), bn = numberish(b[col]);
+      if (Number.isFinite(an) && Number.isFinite(bn)) return (an - bn) * dir;
+      return String(a[col] ?? '').localeCompare(String(b[col] ?? ''), undefined, { numeric:true, sensitivity:'base' }) * dir;
+    });
+  }
+  const totalPages = Math.max(1, Math.ceil(shown.length / view.pageSize));
+  view.page = Math.max(0, Math.min(view.page || 0, totalPages - 1));
+  const pageRows = shown.slice(view.page * view.pageSize, (view.page + 1) * view.pageSize);
+  const filteredNote = totalRows !== rows.length ? `<p class="hint">${formatNumber(rows.length)} of ${formatNumber(totalRows)} rows after filters.</p>` : '';
+  const searchNote = q ? `<p class="hint">${formatNumber(shown.length)} row${shown.length===1?'':'s'} match table search.</p>` : '';
+  const sortArrow = c => view.sortCol === c ? (view.sortDir === 'desc' ? ' ▼' : ' ▲') : '';
+  container.innerHTML = `${filteredNote}<div class="table-tools"><input data-table-search="${escapeAttr(key)}" placeholder="Search this table…" value="${escapeAttr(view.search || '')}"><div class="pager"><button data-table-page="${escapeAttr(key)}" data-delta="-1">Prev</button><span>Page ${view.page + 1} / ${totalPages}</span><button data-table-page="${escapeAttr(key)}" data-delta="1">Next</button></div></div>${searchNote}<table class="data-table"><thead><tr>${limitedCols.map(c=>`<th data-table-sort="${escapeAttr(key)}" data-col="${escapeAttr(c)}" title="Click to sort">${escapeHtml(c)}${sortArrow(c)}</th>`).join('')}</tr></thead><tbody>${pageRows.map(r=>`<tr>${limitedCols.map(c=>`<td>${escapeHtml(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table><p class="hint">Showing ${formatNumber(pageRows.length)} of ${formatNumber(shown.length)} matching rows. Tables show up to 30 columns for browser performance.</p>`;
 }
 
 
@@ -1474,12 +1910,13 @@ function renderInspector() {
   const w = selectedWidget();
   $('inspectorEmpty').style.display = w ? 'none' : 'block'; $('inspector').style.display = w ? 'block' : 'none';
   if (!w) return;
-  $('wTitle').value = w.title; $('wX').value = w.x; $('wY').value = w.y; $('wW').value = w.w; $('wH').value = w.h;
-  $('wType').value = w.type; $('wAgg').value = w.agg; if ($('wPivotColumn')) $('wPivotColumn').value = w.pivotColumn || ''; $('wCountIf').value = w.countIf || ''; $('wSortBy').value = w.sortBy || 'none'; $('wSortDir').value = w.sortDir || 'desc'; $('wTopN').value = w.topN || ''; $('wColors').value = (w.colors || []).join(','); $('wBg').value = rgbToHex(w.bg || '#ffffff'); $('wText').value = rgbToHex(w.text || '#0f172a');
+  $('wTitle').value = w.title; $('wX').value = w.x; $('wY').value = w.y; $('wW').value = w.w; $('wH').value = w.h; if ($('wContent')) $('wContent').value = w.content || '';
+  $('wType').value = w.type; $('wAgg').value = w.agg; if ($('wPivotColumn')) $('wPivotColumn').value = w.pivotColumn || ''; $('wCountIf').value = w.countIf || ''; $('wSortBy').value = w.sortBy || 'none'; $('wSortDir').value = w.sortDir || 'desc'; $('wTopN').value = w.topN || ''; $('wColors').value = (w.colors || []).join(','); $('wBg').value = rgbToHex(w.bg || '#ffffff'); $('wText').value = rgbToHex(w.text || '#0f172a'); if ($('wContent')) $('wContent').value = w.content || '';
   $('wSource').innerHTML = state.sources.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join(''); $('wSource').value = w.sourceId || '';
   refreshFieldSelectors(w);
   renderWidgetFilterControls(w);
-  $('chartOptions').style.display = ['table','summary'].includes(w.type) ? 'none' : 'block';
+  $('chartOptions').style.display = ['table','summary','text'].includes(w.type) ? 'none' : 'block';
+  if ($('textOptions')) $('textOptions').style.display = w.type === 'text' ? 'block' : 'none';
 }
 function refreshFieldSelectors(w) {
   const cols = columnsOf(w.sourceId);
@@ -1523,8 +1960,8 @@ function makeDraggable(el, w) {
     e.preventDefault();
     const dx = e.clientX - start.mx;
     const dy = e.clientY - start.my;
-    w.x = Math.max(0, Math.round(start.x + dx));
-    w.y = Math.max(50, Math.round(start.y + dy));
+    w.x = Math.max(0, maybeSnap(start.x + dx));
+    w.y = Math.max(50, maybeSnap(start.y + dy));
     el.style.left = `${w.x}px`;
     el.style.top = `${w.y}px`;
     if ($('wX')) $('wX').value = w.x;
@@ -1535,6 +1972,7 @@ function makeDraggable(el, w) {
     head.releasePointerCapture?.(start.pointerId);
     window.removeEventListener('pointermove', onMove);
     window.removeEventListener('pointerup', onUp);
+    if (state.settings?.snapToGrid) { snapSelectedWidget(); }
     el.classList.remove('dragging');
     document.body.style.userSelect = '';
     start = null;
@@ -1563,8 +2001,11 @@ function rgbToHex(v) { if (!v || v[0] === '#') return v || '#ffffff'; return '#f
 function cleanProjectForSave() {
   const copy = JSON.parse(JSON.stringify(state));
   copy.appVersion = APP_VERSION;
-  copy.schemaVersion = 3;
+  copy.schemaVersion = PROJECT_SCHEMA_VERSION;
   copy.updatedAt = new Date().toISOString();
+  copy.projectType = 'databench-project';
+  copy.viewer = Object.assign({ defaultMode:'responsive', allowFilters:true, mobileLayout:'stacked', pageNavigation:'tabs', schemaVersion:PROJECT_SCHEMA_VERSION }, copy.viewer || {});
+  copy.architecture = Object.assign({ engine:'DataBench browser runtime', widgetRegistryVersion:WIDGET_REGISTRY_VERSION, schemaVersion:PROJECT_SCHEMA_VERSION }, copy.architecture || {});
   copy.sources?.forEach(src => { delete src._calcSig; });
   return copy;
 }
@@ -1617,14 +2058,185 @@ function encodeB64Unicode(str) {
 function toBase64Unicode(str) {
   return btoa(unescape(encodeURIComponent(str)));
 }
-function exportMobileViewerHtml() {
+
+function previewInViewer() {
+  try {
+    const project = cleanProjectForSave();
+    project.viewer = Object.assign({ defaultMode:'responsive', allowFilters:true, mobileLayout:'stacked', pageNavigation:'tabs', viewerPath:'./viewer/', editorPath:'../' }, project.viewer || {});
+    localStorage.setItem('databench.viewer.preview', JSON.stringify(project));
+    window.open('./viewer/?source=local', '_blank', 'noopener');
+    toast('Viewer preview opened.');
+  } catch (err) {
+    console.error(err);
+    toast('Could not open viewer preview.');
+  }
+}
+function contrastScore(label, fg, bg, large=false) {
+  const ratio = contrastRatio(fg, bg);
+  const pass = ratio >= (large ? 3 : 4.5);
+  return { label, fg, bg, ratio, pass };
+}
+function getThemeContrastChecks() {
+  const t = normalizeTheme(state.theme || {});
+  const cardText = readableTextOn(t.card || '#ffffff', t.cardText || t.text || '#0f172a');
+  const onAccent = readableAccentText(t.accent || '#38bdf8', t.accent2 || '#a78bfa');
+  return [
+    contrastScore('App text on background', t.text || '#e5e7eb', t.bg || '#0f172a'),
+    contrastScore('Panel text on panel', t.text || '#e5e7eb', t.panel || '#111827'),
+    contrastScore('Muted text on panel', t.muted || '#94a3b8', t.panel || '#111827', true),
+    contrastScore('Card/table text on cards', cardText, t.card || '#ffffff'),
+    contrastScore('Button text on accent', onAccent, t.accent || '#38bdf8')
+  ];
+}
+function renderThemeContrastReport() {
+  const el = $('themeContrastReport');
+  if (!el) return;
+  const checks = getThemeContrastChecks();
+  const fails = checks.filter(c => !c.pass);
+  el.innerHTML = fails.length
+    ? `<span class="warn">${fails.length} contrast warning${fails.length===1?'':'s'}.</span><br>${checks.map(c=>`${c.pass?'✓':'⚠'} ${escapeHtml(c.label)}: ${c.ratio.toFixed(1)}:1`).join('<br>')}`
+    : `<b>✓ Contrast check passed.</b><br>${checks.map(c=>`✓ ${escapeHtml(c.label)}: ${c.ratio.toFixed(1)}:1`).join('<br>')}`;
+}
+function runProjectHealthCheck() {
+  $('healthModalTitle').textContent = 'Project Health Check';
+  const warnings = [];
+  const ok = [];
+  if (state.sources.length) ok.push(`${state.sources.length} data source${state.sources.length===1?'':'s'} loaded.`); else warnings.push('No data sources are loaded yet.');
+  if (state.pages.length) ok.push(`${state.pages.length} page${state.pages.length===1?'':'s'} in the project.`); else warnings.push('No dashboard pages exist yet.');
+  const widgets = state.pages.flatMap(p => (p.widgets || []).map(w => ({...w, pageTitle:p.title||'Untitled page'})));
+  if (widgets.length) ok.push(`${widgets.length} widget${widgets.length===1?'':'s'} on the canvas.`); else warnings.push('No widgets have been added yet.');
+
+  const registry = widgetRegistrySummary();
+  ok.push(`Widget registry v${registry.version} loaded with ${registry.count} widget type${registry.count===1?'':'s'}.`);
+  ok.push(`Project schema v${PROJECT_SCHEMA_VERSION}; this file will be saved with DataBench ${APP_VERSION}.`);
+  const unknownWidgets = widgets.filter(w => !widgetSpec(w.type));
+  unknownWidgets.forEach(w => warnings.push(`${w.pageTitle}: ${w.title || 'Widget'} uses unsupported widget type "${w.type}".`));
+  const missingIds = widgets.filter(w => !w.id);
+  if (missingIds.length) warnings.push(`${missingIds.length} widget${missingIds.length===1?'':'s'} missing stable IDs.`);
+  widgets.forEach(w => {
+    if (['bar','line','pie','donut','horizontalBar','scatter','kpi','pivot'].includes(w.type)) {
+      if (!w.sourceId) warnings.push(`${w.pageTitle}: ${w.title || w.type} has no data source.`);
+      if (w.type !== 'kpi' && w.type !== 'table' && w.type !== 'summary' && !w.dimension) warnings.push(`${w.pageTitle}: ${w.title || w.type} has no dimension/row field.`);
+      if (!['table','summary'].includes(w.type) && !w.measureCol) warnings.push(`${w.pageTitle}: ${w.title || w.type} has no measure selected.`);
+    }
+    const bg = w.bg || state.theme.card || '#ffffff';
+    const fg = w.text || readableTextOn(bg, state.theme.text || '#0f172a');
+    const ratio = contrastRatio(fg, bg);
+    if (ratio < 4.5) warnings.push(`${w.pageTitle}: ${w.title || w.type} may have low text contrast (${ratio.toFixed(1)}:1).`);
+  });
+  getThemeContrastChecks().filter(c => !c.pass).forEach(c => warnings.push(`Theme contrast warning: ${c.label} is ${c.ratio.toFixed(1)}:1.`));
+  ok.push('Autosave is enabled with a status LED.');
+  ok.push('Viewer export, static-site package export, and hosted viewer links are available.');
+  ok.push('Data Prep tools are available for field profiling, type changes, Excel date conversion, trimming, blank replacement, and duplicate removal.');
+  ok.push('Layout tools are available for page presets, snap-to-grid, alignment, page duplication, and text widgets.');
+  ok.push('Publishing tools can export a standalone mobile viewer or a static site package with project JSON.');
+
+  const deps = dependencyReport();
+  const missingDeps = deps.filter(d => !d.present);
+  if (missingDeps.length) warnings.push(`Optional browser libraries not currently loaded: ${missingDeps.map(d=>d.name).join(', ')}. Some import/export features may wait for CDN access.`);
+  else ok.push('All optional CDN/browser libraries are currently available.');
+  warnings.push('Some exports use CDN libraries; fully offline deployments should vendor Chart.js, SheetJS, html2canvas, jsPDF, PptxGenJS, QRCode, and JSZip locally.');
+  const report = $('healthReport');
+  report.innerHTML = `<div class="health-row"><span>Project</span><strong>${escapeHtml(state.projectName || 'Untitled DataBench Project')}</strong></div><div class="health-row"><span>Status</span><span class="${warnings.length?'health-warn':'health-ok'}">${warnings.length ? warnings.length + ' item(s) to review' : 'Ready'}</span></div><h3>Looks good</h3><ul>${ok.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul><h3>Review before sharing</h3><ul>${warnings.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>`;
+  $('healthModal').classList.remove('hidden');
+}
+
+function withViewerPublishDefaults(project, overrides={}) {
+  project.viewer = Object.assign({
+    defaultMode:'responsive',
+    allowFilters:true,
+    mobileLayout:'stacked',
+    pageNavigation:'tabs',
+    viewerPath:'./viewer/',
+    editorPath:'../',
+    publishMode:'file',
+    defaultProjectUrl:''
+  }, project.viewer || {}, overrides || {});
+  return project;
+}
+function viewerHtmlFromTemplate({project=null, defaultProjectUrl='', embedded=true}={}) {
   const template = $('databenchViewerTemplate')?.innerHTML;
-  if (!template) return toast('Mobile viewer template is missing.');
+  if (!template) throw new Error('Mobile viewer template is missing.');
+  let html = template;
+  if (embedded && project) {
+    const b64 = toBase64Unicode(JSON.stringify(project));
+    html = html.replace('__DATABENCH_PROJECT_B64__', b64);
+  }
+  if (!embedded) html = html.replace('__DATABENCH_PROJECT_B64__', '__DATABENCH_PROJECT_B64__');
+  html = html.replace('window.DATABENCH_DEFAULT_PROJECT_URL = "";', `window.DATABENCH_DEFAULT_PROJECT_URL = ${JSON.stringify(defaultProjectUrl || '')};`);
+  return html;
+}
+async function exportStaticSitePackage() {
+  const project = withViewerPublishDefaults(cleanProjectForSave(), { publishMode:'static-site', defaultProjectUrl:'project.databench.json' });
+  const projectJson = JSON.stringify(project, null, 2);
+  let viewerHtml;
+  try { viewerHtml = viewerHtmlFromTemplate({ project:null, defaultProjectUrl:'project.databench.json', embedded:false }); }
+  catch(err) { console.error(err); return toast('Viewer template is missing.'); }
+  viewerHtml = viewerHtml.replace('<title>DataBench Viewer v2.0.0</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
+  const manifest = JSON.stringify({ appName:'DataBench', appVersion:APP_VERSION, schemaVersion:PROJECT_SCHEMA_VERSION, projectName:project.projectName || 'Untitled DataBench Project', generatedAt:new Date().toISOString(), files:['index.html','project.databench.json','databench.manifest.json','README.txt'], viewer:{defaultProjectUrl:'project.databench.json'} }, null, 2);
+  const readme = `DataBench static viewer package\n\nOpen index.html from a static web server, or upload this folder to GitHub Pages, Netlify, Cloudflare Pages, or your web host.\n\nFiles:\n- index.html: mobile-friendly DataBench Viewer\n- project.databench.json: dashboard project and embedded source data\n\nHosted URL pattern:\n/databench/viewer/?project=../projects/example.databench.json\n\nGenerated: ${new Date().toISOString()}\nProject: ${project.projectName || 'Untitled DataBench Project'}\n`;
+  const baseName = safeFileName(project.projectName || 'databench');
+  if (window.JSZip) {
+    const zip = new JSZip();
+    zip.file('index.html', viewerHtml);
+    zip.file('project.databench.json', projectJson);
+    zip.file('databench.manifest.json', manifest);
+    zip.file('README.txt', readme);
+    const blob = await zip.generateAsync({ type:'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${baseName}.databench.static-site.zip`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Static site package exported.');
+  } else {
+    downloadText('index.html', viewerHtml, 'text/html');
+    downloadText('project.databench.json', projectJson, 'application/json');
+    downloadText('databench.manifest.json', manifest, 'application/json');
+    downloadText('README.txt', readme, 'text/plain');
+    toast('JSZip unavailable; downloaded site files separately.');
+  }
+}
+function openPublishLinkPanel() {
   const project = cleanProjectForSave();
-  project.viewer = Object.assign({ defaultMode:'responsive', allowFilters:true, mobileLayout:'stacked', pageNavigation:'tabs', viewerPath:'./viewer/', editorPath:'../' }, project.viewer || {});
-  const json = JSON.stringify(project);
-  const b64 = toBase64Unicode(json);
-  const html = template.replace('__DATABENCH_PROJECT_B64__', b64).replace('<title>DataBench Viewer</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
+  const defaultBase = location.origin && location.pathname ? location.origin + location.pathname.replace(/[^/]*$/, '') : '/databench/';
+  $('healthModalTitle').textContent = 'Publish Link & QR';
+  const suggestedViewer = defaultBase.replace(/\/$/, '/') + 'viewer/';
+  const suggestedProject = '../projects/' + safeFileName(project.projectName || 'project') + '.databench.json';
+  $('healthReport').innerHTML = `
+    <p class="hint">Use this helper after uploading your exported project JSON to a hosted <code>projects/</code> folder. The viewer URL uses the deployment pattern <code>/databench/viewer/?project=...</code>.</p>
+    <div class="publish-grid">
+      <div><label>Viewer base URL</label><input id="publishViewerBase" value="${escapeHtml(suggestedViewer)}"></div>
+      <div><label>Project JSON path</label><input id="publishProjectPath" value="${escapeHtml(suggestedProject)}"></div>
+    </div>
+    <label>Shareable viewer URL</label><input id="publishUrl" readonly>
+    <div class="publish-actions"><button id="copyPublishUrlBtn" class="primary">Copy Link</button><button id="downloadPublishJsonBtn">Download Project JSON</button><button id="refreshPublishQrBtn">Refresh QR</button></div>
+    <div class="publish-qr"><img id="publishQr" alt="QR code for published DataBench viewer link"></div>
+    <p class="hint">The QR image uses a public QR image service and needs internet access. The dashboard itself can still be hosted as ordinary static files.</p>`;
+  const refresh = () => {
+    const base = ($('publishViewerBase')?.value || '').trim();
+    const path = ($('publishProjectPath')?.value || '').trim();
+    const url = base + (base.includes('?') ? '&' : '?') + 'project=' + encodeURIComponent(path);
+    $('publishUrl').value = url;
+    $('publishQr').src = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=' + encodeURIComponent(url);
+  };
+  $('healthModal').classList.remove('hidden');
+  setTimeout(() => {
+    $('publishViewerBase')?.addEventListener('input', refresh);
+    $('publishProjectPath')?.addEventListener('input', refresh);
+    $('refreshPublishQrBtn')?.addEventListener('click', refresh);
+    $('copyPublishUrlBtn')?.addEventListener('click', () => { navigator.clipboard?.writeText($('publishUrl').value); toast('Publish link copied.'); });
+    $('downloadPublishJsonBtn')?.addEventListener('click', () => downloadText(`${safeFileName(project.projectName || 'databench')}.databench.json`, JSON.stringify(withViewerPublishDefaults(project, { publishMode:'hosted-project' }), null, 2), 'application/json'));
+    refresh();
+  }, 0);
+}
+
+function exportMobileViewerHtml() {
+  let project = withViewerPublishDefaults(cleanProjectForSave(), { publishMode:'standalone-html' });
+  let html;
+  try { html = viewerHtmlFromTemplate({ project, embedded:true }); }
+  catch(err) { console.error(err); return toast('Mobile viewer template is missing.'); }
+  html = html.replace('<title>DataBench Viewer v2.0.0</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
   downloadText(`${safeFileName(project.projectName || 'databench')}.databench.viewer.html`, html, 'text/html');
   toast('Mobile viewer HTML exported.');
 }
@@ -1727,7 +2339,7 @@ function applyTemplate() {
   const dim2 = dims.find(d => d !== dim1 && !/id$/i.test(d)) || dims[1] || dim1;
   const measure = nums[0] || src.columns[0];
   const type = $('templateSelect')?.value || 'sales';
-  const p = { id: uid('page'), title: `${type[0].toUpperCase()+type.slice(1)} Template`, filters: [], widgets: [] };
+  const p = { id: uid('page'), title: `${type[0].toUpperCase()+type.slice(1)} Template`, filters: [], width: state.settings?.pageWidth || 1280, height: state.settings?.pageHeight || 780, preset: state.settings?.pagePreset || 'desktop', widgets: [] };
   p.widgets.push(defaultWidget({ type:'kpi', title:`Total ${measure}`, sourceId:src.id, dimension:'__all__', measureCol:measure, agg:'sum', x:28, y:72, w:280, h:170 }));
   p.widgets.push(defaultWidget({ type:type === 'survey' ? 'donut' : 'bar', title:`${measure} by ${dim1}`, sourceId:src.id, dimension:dim1, measureCol:measure, agg:type === 'survey' ? 'count' : 'sum', x:340, y:72, w:520, h:300, topN:10 }));
   p.widgets.push(defaultWidget({ type:'horizontalBar', title:`Top ${dim2}`, sourceId:src.id, dimension:dim2, measureCol:measure, agg:type === 'survey' ? 'count' : 'sum', x:28, y:400, w:520, h:330, topN:10 }));
@@ -1749,6 +2361,40 @@ function setAutosaveStatus(msg, mode='normal') {
       ? 'Autosave failed. Save JSON manually.'
       : 'Autosave has pending changes';
 }
+
+function recentProjects() {
+  try { return JSON.parse(localStorage.getItem('databench_recent_projects') || '[]'); } catch(err) { return []; }
+}
+function saveRecentProjectSnapshot(rawPayload=null) {
+  try {
+    const payload = rawPayload || autosavePayload();
+    const project = JSON.parse(payload);
+    const item = {
+      id: project.id || project.createdAt || uid('recent'),
+      name: project.projectName || 'Untitled DataBench Project',
+      updatedAt: new Date().toISOString(),
+      pages: (project.pages || []).length,
+      sources: (project.sources || []).length,
+      payload
+    };
+    const list = recentProjects().filter(r => r.id !== item.id && r.name !== item.name);
+    list.unshift(item);
+    localStorage.setItem('databench_recent_projects', JSON.stringify(list.slice(0,6)));
+  } catch(err) { console.warn('Could not update recent projects', err); }
+}
+function renderRecentProjects() {
+  const host = $('recentProjectsList');
+  if (!host) return;
+  const list = recentProjects();
+  if (!list.length) { host.innerHTML = '<p class="hint">No recent projects yet. Autosaved projects will appear here.</p>'; return; }
+  host.innerHTML = list.map((r,i)=>`<div class="recent-item"><div><strong>${escapeHtml(r.name)}</strong><small>${formatNumber(r.sources||0)} sources · ${formatNumber(r.pages||0)} pages · ${new Date(r.updatedAt).toLocaleString()}</small></div><button class="small" data-load-recent="${i}">Open</button></div>`).join('');
+}
+function loadRecentProject(index) {
+  const item = recentProjects()[index];
+  if (!item) return toast('Recent project not found.');
+  try { loadProject(JSON.parse(item.payload)); hideStartScreen(); toast('Recent project loaded.'); } catch(err) { toast('Could not load recent project.'); }
+}
+
 function autosavePayload() {
   state.appVersion = APP_VERSION;
   return JSON.stringify(cleanProjectForSave());
@@ -1760,6 +2406,7 @@ function flushAutosave(reason='auto') {
     localStorage.setItem(AUTOSAVE_KEY, payload);
     // Keep one explicit backup slot so a bad browser refresh is easier to recover from.
     localStorage.setItem('databench_autosave_backup', payload);
+    saveRecentProjectSnapshot(payload);
     lastAutosaveAt = new Date();
     autosaveDirty = false;
     setAutosaveStatus(`Autosaved ${lastAutosaveAt.toLocaleTimeString([], {hour:'numeric', minute:'2-digit', second:'2-digit'})}`, 'saved');
@@ -1798,9 +2445,49 @@ function restoreAutosave() {
   }
   catch(err) { toast('Autosave could not be restored.'); }
 }
+
+function migrateProject(project) {
+  if (!project || typeof project !== 'object') project = {};
+  const fromSchema = Number(project.schemaVersion || 1);
+  project.appName = project.appName || 'DataBench';
+  project.projectType = project.projectType || 'databench-project';
+  project.schemaVersion = PROJECT_SCHEMA_VERSION;
+  project.viewer = Object.assign({
+    defaultMode:'responsive',
+    allowFilters:true,
+    allowExport:false,
+    showSourceTables:false,
+    mobileLayout:'stacked',
+    pageNavigation:'tabs',
+    schemaVersion:PROJECT_SCHEMA_VERSION
+  }, project.viewer || {});
+  project.architecture = Object.assign({
+    engine:'DataBench browser runtime',
+    widgetRegistryVersion:WIDGET_REGISTRY_VERSION,
+    schemaVersion:PROJECT_SCHEMA_VERSION
+  }, project.architecture || {});
+  project.migrations = Array.isArray(project.migrations) ? project.migrations : [];
+  if (fromSchema < PROJECT_SCHEMA_VERSION) {
+    project.migrations.push({ fromSchema, toSchema: PROJECT_SCHEMA_VERSION, appVersion: APP_VERSION, at: new Date().toISOString() });
+  }
+  return project;
+}
+function dependencyReport() {
+  return [
+    { name:'Chart.js', present:!!window.Chart, purpose:'Charts in editor/viewer' },
+    { name:'SheetJS XLSX', present:!!window.XLSX, purpose:'XLSX import' },
+    { name:'html2canvas', present:!!window.html2canvas, purpose:'PNG/PDF/PPT export capture' },
+    { name:'jsPDF', present:!!(window.jspdf && window.jspdf.jsPDF), purpose:'PDF export' },
+    { name:'PptxGenJS', present:!!window.PptxGenJS, purpose:'PPTX export' },
+    { name:'JSZip', present:!!window.JSZip, purpose:'Static-site ZIP export' },
+    { name:'QRCode', present:!!window.QRCode, purpose:'Publish/share QR generation' }
+  ];
+}
+
 function upgradeProject(project) {
+  migrateProject(project);
   project.appVersion = project.appVersion || '0.1.0';
-  project.schemaVersion = Math.max(project.schemaVersion || 1, 2);
+  project.schemaVersion = Math.max(project.schemaVersion || 1, PROJECT_SCHEMA_VERSION);
   project.createdAt = project.createdAt || new Date().toISOString();
   project.updatedAt = project.updatedAt || new Date().toISOString();
   project.theme = normalizeTheme(project.theme || defaultTheme('dark'));
@@ -1808,14 +2495,16 @@ function upgradeProject(project) {
   project.pages = project.pages || [];
   project.globalFilters = project.globalFilters || [];
   project.relationships = project.relationships || [];
+  project.settings = Object.assign({ snapToGrid:true, gridSize:24, pagePreset:'desktop', pageWidth:1280, pageHeight:780 }, project.settings || {});
+  project.settings = Object.assign({ snapToGrid:true, gridSize:24, pagePreset:'desktop', pageWidth:1280, pageHeight:780 }, project.settings || {}, project.design || {});
   project.sources.forEach(src => { src.calculatedFields = src.calculatedFields || []; src.columns = src.columns || Array.from(new Set((src.rows||[]).flatMap(r => Object.keys(r)))); src.rows = normalizeRows(src.rows || []); applyCalculatedFields(src); src.fields = inferFields(src.rows, src.columns).map(f => { const calc = src.calculatedFields.find(c => c.name === f.name); return calc ? Object.assign(f, { calculated:true, formula:calc.formula }) : f; }); src.profile = profileSource(src.rows, src.columns, src.fields); });
-  project.pages.forEach(p => { p.filters = p.filters || []; (p.widgets||[]).forEach(w => { if (!w.sortBy) w.sortBy = 'measure'; if (!w.sortDir) w.sortDir = 'desc'; if (w.topN == null) w.topN = 0; if (w.pivotColumn == null) w.pivotColumn = ''; w.filters = w.filters || []; }); });
+  project.pages.forEach(p => { p.filters = p.filters || []; ensurePageLayout(p); (p.widgets||[]).forEach(w => { normalizeWidgetRecord(w); if (w.type === 'text' && w.content == null) w.content = w.title || ''; if (!w.sortBy) w.sortBy = 'measure'; if (!w.sortDir) w.sortDir = 'desc'; if (w.topN == null) w.topN = 0; if (w.pivotColumn == null) w.pivotColumn = ''; w.filters = w.filters || []; }); });
 }
 function loadSampleProject() {
   if (state.sources.length && !confirm('Replace current project with a sample project?')) return;
   state.projectName = 'Sample Sales Dashboard';
-  state.createdAt = new Date().toISOString(); state.updatedAt = new Date().toISOString(); state.schemaVersion = 2; state.appVersion = APP_VERSION;
-  state.sources = []; state.pages = []; state.activePageId = null; state.selectedWidgetId = null; state.globalFilters = []; state.relationships = []; state.theme = defaultTheme('dark');
+  state.createdAt = new Date().toISOString(); state.updatedAt = new Date().toISOString(); state.schemaVersion = PROJECT_SCHEMA_VERSION; state.appVersion = APP_VERSION;
+  state.sources = []; state.pages = []; state.activePageId = null; state.selectedWidgetId = null; state.globalFilters = []; state.relationships = []; state.design = {snapToGrid:true, gridSize:24}; state.theme = defaultTheme('dark'); state.settings = { snapToGrid:true, gridSize:24, pagePreset:'desktop', pageWidth:1280, pageHeight:780 };
   const sales = [
     ['OrderID','Date','Region','Category','Product','CustomerID','Units','Revenue','Cost'],
     ['1001','2026-01-04','North','Tools','Cordless Drill','C001',3,447,270], ['1002','2026-01-11','South','Craft','Vinyl Cutter','C002',1,299,180],
@@ -1917,7 +2606,7 @@ function initPolishTabs() {
     panel.prepend(tabBar);
     const sectionGroup = section => {
       const heading = section.querySelector('h2')?.textContent.trim().toLowerCase() || '';
-      if (/data sources/.test(heading)) return 'data';
+      if (/data sources|data prep|field profiles/.test(heading)) return 'data';
       if (/templates|pages & widgets/.test(heading)) return 'build';
       if (/calculated fields|data model/.test(heading)) return 'model';
       if (/theme studio/.test(heading)) return 'style';
@@ -1986,9 +2675,23 @@ $('createJoinBtn').addEventListener('click', () => {
 $('joinLeft').addEventListener('change', refreshJoinKeys); $('joinRight').addEventListener('change', refreshJoinKeys);
 $('joinKey').addEventListener('change', updateJoinDiagnostics); $('joinType').addEventListener('change', updateJoinDiagnostics);
 $('addPageBtn').addEventListener('click', addPage); document.addEventListener('click', e => { if (e.target.id === 'miniAddPage') addPage(); });
-function addPage() { const p = { id: uid('page'), title: `Page ${state.pages.length+1}`, widgets: [] }; state.pages.push(p); state.activePageId = p.id; state.selectedWidgetId = null; renderAll(); }
-$('addTableBtn').addEventListener('click', () => addWidget('table')); $('addChartBtn').addEventListener('click', () => addWidget('bar')); $('addSummaryBtn').addEventListener('click', () => addWidget('summary')); $('addPivotBtn')?.addEventListener('click', () => addWidget('pivot'));
-function addWidget(type) { const p = activePage() || (addPage(), activePage()); const title = type === 'table' ? 'Data Table' : type === 'summary' ? 'Data Summary' : type === 'pivot' ? 'Pivot Table' : 'Analysis Chart'; const w = defaultWidget({ type, title }); p.widgets.push(w); state.selectedWidgetId = w.id; renderAll(); }
+function addPage() { const p = { id: uid('page'), title: `Page ${state.pages.length+1}`, filters: [], widgets: [], width: state.settings?.pageWidth || 1280, height: state.settings?.pageHeight || 780, preset: state.settings?.pagePreset || 'desktop' }; state.pages.push(p); state.activePageId = p.id; state.selectedWidgetId = null; renderAll(); }
+$('addTableBtn').addEventListener('click', () => addWidget('table')); $('addChartBtn').addEventListener('click', () => addWidget('bar')); $('addSummaryBtn').addEventListener('click', () => addWidget('summary')); $('addPivotBtn')?.addEventListener('click', () => addWidget('pivot')); $('addTextBtn')?.addEventListener('click', () => addWidget('text')); $('duplicatePageBtn')?.addEventListener('click', duplicatePage);
+function addWidget(type) { const p = activePage() || (addPage(), activePage()); const title = type === 'table' ? 'Data Table' : type === 'summary' ? 'Data Summary' : type === 'pivot' ? 'Pivot Table' : type === 'text' ? 'Text Note' : 'Analysis Chart'; const w = defaultWidget({ type, title, content: type === 'text' ? '# New note\nAdd context, labels, instructions, or observations here.' : '' }); p.widgets.push(w); state.selectedWidgetId = w.id; renderAll(); }
+
+function duplicatePage() {
+  const p = activePage(); if (!p) return toast('Select a page to duplicate.');
+  const copy = JSON.parse(JSON.stringify(p)); copy.id = uid('page'); copy.title = `${p.title || 'Page'} copy`;
+  copy.widgets = (copy.widgets || []).map(w => Object.assign(w, { id: uid('w') }));
+  state.pages.push(copy); state.activePageId = copy.id; state.selectedWidgetId = null; renderAll(); toast('Page duplicated.');
+}
+function syncLayoutControls(){const p=activePage(); if($('snapToGrid')) $('snapToGrid').checked=!!state.settings?.snapToGrid; if($('gridSizeInput')) $('gridSizeInput').value=currentGridSize(); if($('pageSizePreset')&&p) $('pageSizePreset').value=p.preset||'desktop';}
+function applyPageSizePreset(){const p=activePage(); if(!p)return toast('Select a page first.'); const key=$('pageSizePreset')?.value||'desktop'; const preset=PAGE_PRESETS[key]||PAGE_PRESETS.desktop; p.width=preset.width; p.height=preset.height; p.preset=key; state.settings=state.settings||{}; state.settings.pagePreset=key; state.settings.pageWidth=preset.width; state.settings.pageHeight=preset.height; renderAll(); toast(`${preset.label} applied.`);}
+function snapSelectedWidget(){const w=selectedWidget(); if(!w)return toast('Select a widget first.'); w.x=snapValue(w.x); w.y=snapValue(w.y); w.w=Math.max(260,snapValue(w.w)); w.h=Math.max(170,snapValue(w.h)); renderAll(); toast('Widget snapped.');}
+function arrangeWidgetsToGrid(){const p=activePage(); if(!p||!(p.widgets||[]).length)return toast('No widgets on this page.'); const g=currentGridSize(), margin=g, cols=Math.max(1,Math.floor((pageWidth(p)-margin)/420)); p.widgets.forEach((w,i)=>{w.x=margin+(i%cols)*snapValue(420); w.y=90+Math.floor(i/cols)*snapValue(300); w.w=Math.max(260,snapValue(w.w||360)); w.h=Math.max(170,snapValue(w.h||240));}); renderAll(); toast('Widgets arranged.');}
+function fitPageToWidgets(){const p=activePage(); if(!p||!(p.widgets||[]).length)return toast('No widgets to fit.'); const maxRight=Math.max(...p.widgets.map(w=>Number(w.x||0)+Number(w.w||0)))+48; const maxBottom=Math.max(...p.widgets.map(w=>Number(w.y||0)+Number(w.h||0)))+48; p.width=Math.max(390,snapValue(maxRight)); p.height=Math.max(500,snapValue(maxBottom)); p.preset='custom'; renderAll(); toast('Page resized.');}
+function alignSelectedWidget(where){const p=activePage(),w=selectedWidget(); if(!p||!w)return toast('Select a widget first.'); const margin=24, topMargin=72; if(where==='left')w.x=margin; if(where==='center')w.x=Math.max(0,Math.round((pageWidth(p)-Number(w.w||0))/2)); if(where==='right')w.x=Math.max(0,pageWidth(p)-Number(w.w||0)-margin); if(where==='top')w.y=topMargin; if(where==='middle')w.y=Math.max(50,Math.round((pageHeight(p)-Number(w.h||0))/2)); if(where==='bottom')w.y=Math.max(50,pageHeight(p)-Number(w.h||0)-margin); w.x=maybeSnap(w.x); w.y=maybeSnap(w.y); renderAll();}
+
 function duplicateWidget(id=state.selectedWidgetId) {
   const p = activePage();
   const w = p?.widgets.find(x => x.id === id);
@@ -2142,7 +2845,8 @@ function readInspectorIntoWidget() {
     topN:+$('wTopN').value||0,
     colors:$('wColors').value.split(',').map(s=>s.trim()).filter(Boolean),
     bg:$('wBg').value,
-    text:$('wText').value
+    text:$('wText').value,
+    content:$('wContent')?.value || ''
   });
   return w;
 }
@@ -2162,7 +2866,7 @@ function scheduleInspectorLiveApply() {
   clearTimeout(inspectorTimer);
   inspectorTimer = setTimeout(() => applyInspectorLive(false), 180);
 }
-['wTitle','wX','wY','wW','wH','wType','wDimension','wPivotColumn','wMeasureCol','wAgg','wCountIf','wSortBy','wSortDir','wTopN','wColors','wBg','wText'].forEach(id => $(id)?.addEventListener('input', scheduleInspectorLiveApply));
+['wTitle','wX','wY','wW','wH','wType','wDimension','wPivotColumn','wMeasureCol','wAgg','wCountIf','wSortBy','wSortDir','wTopN','wColors','wBg','wText','wContent'].forEach(id => $(id)?.addEventListener('input', scheduleInspectorLiveApply));
 ['wType','wDimension','wPivotColumn','wMeasureCol','wAgg','wSortBy','wSortDir'].forEach(id => $(id)?.addEventListener('change', () => applyInspectorLive(false)));
 $('applyWidgetBtn').addEventListener('click', () => { readInspectorIntoWidget(); renderAll(); toast('Widget refreshed.'); });
 $('wSource').addEventListener('change', () => { const w=selectedWidget(); if (!w) return; w.sourceId=$('wSource').value; refreshFieldSelectors(w); renderFields(); applyInspectorLive(false); });
@@ -2179,7 +2883,7 @@ $('loadJsonInput').addEventListener('change', async e => {
   catch(err) { toast('Could not load project JSON.'); }
   e.target.value='';
 });
-$('newProjectBtn').addEventListener('click', () => { if (!confirm('Start a new empty project?')) return; state.appVersion=APP_VERSION; state.schemaVersion=3; state.projectName='Untitled DataBench Project'; state.createdAt=new Date().toISOString(); state.updatedAt=new Date().toISOString(); state.sources=[]; state.pages=[]; state.activePageId=null; state.selectedWidgetId=null; state.globalFilters=[]; state.relationships=[]; state.theme=defaultTheme('dark'); renderAll(); });
+$('newProjectBtn').addEventListener('click', () => { if (!confirm('Start a new empty project?')) return; state.appVersion=APP_VERSION; state.schemaVersion=PROJECT_SCHEMA_VERSION; state.projectName='Untitled DataBench Project'; state.createdAt=new Date().toISOString(); state.updatedAt=new Date().toISOString(); state.sources=[]; state.pages=[]; state.activePageId=null; state.selectedWidgetId=null; state.globalFilters=[]; state.relationships=[]; state.design={snapToGrid:true, gridSize:24}; state.theme=defaultTheme('dark'); state.settings={ snapToGrid:true, gridSize:24, pagePreset:'desktop', pageWidth:1280, pageHeight:780 }; renderAll(); });
 $('restoreAutosaveBtn').addEventListener('click', restoreAutosave);
 $('restoreAutosaveBtn2').addEventListener('click', restoreAutosave);
 $('undoBtn')?.addEventListener('click', undo);
@@ -2189,11 +2893,41 @@ $('exportPngBtn')?.addEventListener('click', exportCurrentPagePng);
 $('exportPdfBtn')?.addEventListener('click', exportProjectPdf);
 $('exportPptBtn')?.addEventListener('click', exportProjectPptx);
 $('exportMobileViewerBtn')?.addEventListener('click', exportMobileViewerHtml);
+$('exportStaticSiteBtn')?.addEventListener('click', exportStaticSitePackage);
+$('publishLinkBtn')?.addEventListener('click', openPublishLinkPanel);
+$('previewViewerBtn')?.addEventListener('click', previewInViewer);
+$('healthCheckBtn')?.addEventListener('click', runProjectHealthCheck);
+$('closeHealthModalBtn')?.addEventListener('click', () => $('healthModal')?.classList.add('hidden'));
+$('healthModal')?.addEventListener('click', e => { if (e.target.id === 'healthModal') $('healthModal').classList.add('hidden'); });
 $('exportDataBtn')?.addEventListener('click', exportSelectedDataCsv);
 $('applyTemplateBtn')?.addEventListener('click', applyTemplate);
 $('sampleDataBtn').addEventListener('click', loadSampleProject);
+$('prepSource')?.addEventListener('change', renderDataPrepControls);
+$('prepField')?.addEventListener('change', updateDataPrepProfile);
+$('profileFieldBtn')?.addEventListener('click', updateDataPrepProfile);
+$('renameFieldBtn')?.addEventListener('click', renameField);
+$('applyTypeBtn')?.addEventListener('click', applyPrepType);
+$('convertExcelDatesBtn')?.addEventListener('click', convertPrepExcelDates);
+$('trimFieldBtn')?.addEventListener('click', trimPrepField);
+$('replaceBlanksBtn')?.addEventListener('click', replacePrepBlanks);
+$('removeEmptyRowsBtn')?.addEventListener('click', removeEmptyRows);
+$('removeDuplicatesBtn')?.addEventListener('click', removeDuplicateRows);
 $('calcSource')?.addEventListener('change', renderCalcFieldList);
 $('addCalcFieldBtn')?.addEventListener('click', addCalculatedField);
+
+
+$('pageSizePreset')?.addEventListener('change', applyPageSizePreset);
+$('snapToGrid')?.addEventListener('change', e => { state.settings = state.settings || {}; state.settings.snapToGrid = e.target.checked; queueAutosave(); toast(state.settings.snapToGrid ? 'Snap to grid on.' : 'Snap to grid off.'); });
+$('gridSizeInput')?.addEventListener('change', e => { state.settings = state.settings || {}; state.settings.gridSize = Math.max(4, Math.min(96, Number(e.target.value || 24))); renderAll(); toast('Grid size updated.'); });
+$('snapSelectedBtn')?.addEventListener('click', snapSelectedWidget);
+$('arrangeGridBtn')?.addEventListener('click', arrangeWidgetsToGrid);
+$('fitWidgetsBtn')?.addEventListener('click', fitPageToWidgets);
+$('alignLeftBtn')?.addEventListener('click', () => alignSelectedWidget('left'));
+$('alignCenterBtn')?.addEventListener('click', () => alignSelectedWidget('center'));
+$('alignRightBtn')?.addEventListener('click', () => alignSelectedWidget('right'));
+$('alignTopBtn')?.addEventListener('click', () => alignSelectedWidget('top'));
+$('alignMiddleBtn')?.addEventListener('click', () => alignSelectedWidget('middle'));
+$('alignBottomBtn')?.addEventListener('click', () => alignSelectedWidget('bottom'));
 
 $('pageFilterSource').addEventListener('change', renderFilterControls);
 $('addPageFilterBtn').addEventListener('click', () => {
@@ -2213,6 +2947,31 @@ $('addWidgetFilterBtn').addEventListener('click', () => {
 });
 $('clearWidgetFiltersBtn').addEventListener('click', () => { const w = selectedWidget(); if (!w) return; w.filters = []; renderAll(); });
 
+document.addEventListener('input', e => {
+  const key = e.target.dataset?.tableSearch;
+  if (!key) return;
+  tableViewState[key] = tableViewState[key] || { search:'', sortCol:'', sortDir:'asc', page:0, pageSize:50 };
+  tableViewState[key].search = e.target.value;
+  tableViewState[key].page = 0;
+  renderCanvas();
+});
+document.addEventListener('click', e => {
+  const pageKey = e.target.dataset?.tablePage;
+  if (pageKey) {
+    tableViewState[pageKey] = tableViewState[pageKey] || { search:'', sortCol:'', sortDir:'asc', page:0, pageSize:50 };
+    tableViewState[pageKey].page += Number(e.target.dataset.delta || 0);
+    renderCanvas();
+  }
+  const sortKey = e.target.dataset?.tableSort;
+  if (sortKey) {
+    const col = e.target.dataset.col;
+    const v = tableViewState[sortKey] || (tableViewState[sortKey] = { search:'', sortCol:'', sortDir:'asc', page:0, pageSize:50 });
+    if (v.sortCol === col) v.sortDir = v.sortDir === 'asc' ? 'desc' : 'asc'; else { v.sortCol = col; v.sortDir = 'asc'; }
+    v.page = 0;
+    renderCanvas();
+  }
+});
+
 document.addEventListener('keydown', e => { if (e.key === 'Escape') hideWidgetContextMenu(); });
 document.addEventListener('scroll', hideWidgetContextMenu, true);
 document.addEventListener('click', e => {
@@ -2221,6 +2980,93 @@ document.addEventListener('click', e => {
   const wfid = e.target.dataset?.removeWidgetFilter;
   if (wfid) { const w = selectedWidget(); if (w) { w.filters = (w.filters || []).filter(f => f.id !== wfid); renderAll(); } }
 });
+
+// v1.9 Home screen and command palette
+let commandPaletteIndex = 0;
+function commandDefinitions() {
+  return [
+    {label:'Home / Start screen', group:'Project', action:showStartScreen},
+    {label:'New project', group:'Project', action:()=>$('newProjectBtn')?.click()},
+    {label:'Open project JSON', group:'Project', action:()=>$('projectJsonInput')?.click()},
+    {label:'Restore autosave', group:'Project', action:()=>$('restoreAutosaveBtn')?.click()},
+    {label:'Save project JSON', group:'Project', action:()=>$('saveJsonBtn')?.click()},
+    {label:'Load sample project', group:'Project', action:()=>$('sampleDataBtn')?.click()},
+    {label:'Project health check', group:'Project', action:()=>$('healthCheckBtn')?.click()},
+    {label:'Preview in viewer', group:'Publish', action:()=>$('previewViewerBtn')?.click()},
+    {label:'Open viewer app', group:'Publish', action:()=>$('openViewerAppBtn')?.click()},
+    {label:'Export mobile viewer', group:'Export', action:()=>$('exportMobileViewerBtn')?.click()},
+    {label:'Export static site', group:'Export', action:()=>$('exportStaticSiteBtn')?.click()},
+    {label:'Publish link / QR', group:'Export', action:()=>$('publishLinkBtn')?.click()},
+    {label:'Export PDF', group:'Export', action:()=>$('exportPdfBtn')?.click()},
+    {label:'Export PowerPoint', group:'Export', action:()=>$('exportPptBtn')?.click()},
+    {label:'Add blank page', group:'Build', action:()=>$('addPageBtn')?.click()},
+    {label:'Duplicate page', group:'Build', action:()=>$('duplicatePageBtn')?.click()},
+    {label:'Add table', group:'Build', action:()=>$('addTableBtn')?.click()},
+    {label:'Add chart', group:'Build', action:()=>$('addChartBtn')?.click()},
+    {label:'Add KPI', group:'Build', action:()=>$('addKpiBtn')?.click()},
+    {label:'Add summary', group:'Build', action:()=>$('addSummaryBtn')?.click()},
+    {label:'Add pivot table', group:'Build', action:()=>$('addPivotBtn')?.click()},
+    {label:'Add text / markdown', group:'Build', action:()=>$('addTextBtn')?.click()},
+    {label:'Toggle left panel', group:'View', action:()=>$('toggleLeftPanel')?.click()},
+    {label:'Toggle right panel', group:'View', action:()=>$('toggleRightPanel')?.click()},
+    {label:'Snap selected widget', group:'Layout', action:()=>$('snapSelectedBtn')?.click()},
+    {label:'Arrange widgets to grid', group:'Layout', action:()=>$('arrangeGridBtn')?.click()},
+    {label:'Fit page to widgets', group:'Layout', action:()=>$('fitWidgetsBtn')?.click()},
+    {label:'Undo', group:'Edit', action:()=>$('undoBtn')?.click()},
+    {label:'Redo', group:'Edit', action:()=>$('redoBtn')?.click()}
+  ];
+}
+function showStartScreen() { renderRecentProjects(); $('startModal')?.classList.remove('hidden'); }
+function hideStartScreen() { $('startModal')?.classList.add('hidden'); }
+function openCommandPalette() { commandPaletteIndex = 0; $('commandPalette')?.classList.remove('hidden'); const input=$('commandInput'); if(input){ input.value=''; input.focus(); } renderCommandPalette(); }
+function closeCommandPalette() { $('commandPalette')?.classList.add('hidden'); }
+function filteredCommands() {
+  const q = ($('commandInput')?.value || '').trim().toLowerCase();
+  const cmds = commandDefinitions();
+  if (!q) return cmds;
+  return cmds.filter(c => (c.label + ' ' + c.group).toLowerCase().includes(q));
+}
+function renderCommandPalette() {
+  const list = $('commandList'); if (!list) return;
+  const cmds = filteredCommands();
+  if (commandPaletteIndex >= cmds.length) commandPaletteIndex = Math.max(0, cmds.length-1);
+  list.innerHTML = cmds.length ? cmds.map((c,i)=>`<button class="command-item ${i===commandPaletteIndex?'active':''}" data-command-index="${i}"><strong>${escapeHtml(c.label)}</strong><span>${escapeHtml(c.group)}</span></button>`).join('') : '<p class="hint" style="padding:.75rem;">No matching commands.</p>';
+}
+function runCommand(index=commandPaletteIndex) {
+  const cmd = filteredCommands()[index];
+  if (!cmd) return;
+  closeCommandPalette();
+  setTimeout(()=>cmd.action(), 0);
+}
+function initStartAndCommands() {
+  $('homeBtn')?.addEventListener('click', showStartScreen);
+  $('commandPaletteBtn')?.addEventListener('click', openCommandPalette);
+  $('closeStartModalBtn')?.addEventListener('click', hideStartScreen);
+  $('startNewProjectBtn')?.addEventListener('click', () => { hideStartScreen(); $('newProjectBtn')?.click(); });
+  $('startOpenProjectBtn')?.addEventListener('click', () => { hideStartScreen(); $('projectJsonInput')?.click(); });
+  $('startRestoreBtn')?.addEventListener('click', () => { hideStartScreen(); $('restoreAutosaveBtn')?.click(); });
+  $('startSampleBtn')?.addEventListener('click', () => { hideStartScreen(); $('sampleDataBtn')?.click(); });
+  $('startViewerBtn')?.addEventListener('click', () => $('openViewerAppBtn')?.click());
+  $('startHealthBtn')?.addEventListener('click', () => { hideStartScreen(); $('healthCheckBtn')?.click(); });
+  $('commandInput')?.addEventListener('input', () => { commandPaletteIndex = 0; renderCommandPalette(); });
+  $('commandList')?.addEventListener('click', e => { const btn=e.target.closest('[data-command-index]'); if(btn) runCommand(Number(btn.dataset.commandIndex)); });
+  document.addEventListener('click', e => { const b=e.target.closest('[data-load-recent]'); if (b) loadRecentProject(Number(b.dataset.loadRecent)); });
+  document.addEventListener('keydown', e => {
+    const cmdOpen = !$('commandPalette')?.classList.contains('hidden');
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openCommandPalette(); return; }
+    if (!cmdOpen) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeCommandPalette(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); commandPaletteIndex++; renderCommandPalette(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); commandPaletteIndex = Math.max(0, commandPaletteIndex-1); renderCommandPalette(); }
+    if (e.key === 'Enter') { e.preventDefault(); runCommand(); }
+  });
+  if (!localStorage.getItem('databench_start_seen')) {
+    localStorage.setItem('databench_start_seen','1');
+    setTimeout(showStartScreen, 150);
+  }
+}
+initStartAndCommands();
+
 window.addEventListener('beforeunload', () => {
   if (autosaveDirty) flushAutosave('beforeunload');
 });
