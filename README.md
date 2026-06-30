@@ -10,8 +10,8 @@ DataBench is intentionally lightweight: no backend, no database server, no accou
 
 ## Current Version
 
-**DataBench Editor v2.0.4**  
-**DataBench Viewer v2.0.4**  
+**DataBench Editor v2.0.7**  
+**DataBench Viewer v2.0.7**  
 **Project schema version: 8**
 
 The project currently ships as two static browser apps:
@@ -20,6 +20,22 @@ The project currently ships as two static browser apps:
 - `databench-viewer.html` — the mobile-friendly dashboard viewer
 
 The old `quickviz_suite.html` compatibility copy is no longer maintained.
+
+---
+
+## Latest Update: v2.0.7
+
+DataBench v2.0.7 is a bug-fix and reliability release focused on dashboard widget sizing.
+
+Fixes and notes:
+
+- Resized widgets now retain their width and height when switching away from a page and returning.
+- The editor now uses the dedicated bottom-right resize handle as the authoritative resize path.
+- The old observer-based resize tracking that could accidentally save detached widgets at tiny dimensions has been removed.
+- Widget geometry is preserved in project state, autosave, and exported project JSON.
+- The visible editor/viewer version labels now match the runtime version.
+
+When editing dashboards, resize widgets using the bottom-right resize handle, then switch pages normally. The saved dimensions should remain intact.
 
 ---
 
@@ -55,8 +71,8 @@ It is not intended to replace full enterprise BI platforms, data warehouses, or 
 - Provides a Home screen on startup
 - Includes autosave with LED-style status indicator
 - Saves and loads `.databench.json` project files
-- Supports multi-page dashboard canvases
-- Adds draggable, resizable widgets
+- Supports multi-page dashboard canvases with page-specific widget layouts
+- Adds draggable, resizable widgets with persistent geometry
 - Supports tables, charts, KPIs, summaries, pivot tables, and text/markdown widgets
 - Uses dimensions, measures, aggregations, calculated fields, filters, and joins
 - Includes data prep and field profiling tools
@@ -352,7 +368,8 @@ Widgets can be:
 - selected
 - configured
 - dragged by the widget header
-- resized
+- resized with the bottom-right resize handle
+- persist their size/position when switching pages
 - duplicated
 - deleted
 - sent forward/backward
@@ -557,7 +574,7 @@ The editor includes dashboard layout tools:
 - arrange widgets to grid
 - duplicate page
 
-Page width/height is saved in project JSON and respected by the viewer.
+Page width/height is saved in project JSON and respected by the viewer. Widget position and size are also saved per page and retained when navigating between pages.
 
 On phones, the viewer transforms dashboard pages into stacked cards for readability.
 
@@ -762,6 +779,23 @@ Export quality depends on browser rendering, loaded chart libraries, and availab
 
 ---
 
+## Version Notes
+
+Current release: **v2.0.7**.
+
+Recent v2 patch releases focused on stability after the v2.0 architecture update:
+
+- **v2.0.7** — fixed widget resize persistence when switching pages.
+- **v2.0.6** — added the dedicated widget resize handle and synchronized visible version labels.
+- **v2.0.5** — improved page-switch geometry syncing.
+- **v2.0.4** — opened the Home dialog automatically on startup.
+- **v2.0.3** — restored missing contrast helper functions.
+- **v2.0.2** — repaired CSV/XLSX/XLS/XLSM data-file opening paths.
+- **v2.0.1** — fixed command-palette overlay visibility/close behavior.
+- **v2.0.0** — introduced schema v8, migrations, architecture metadata, and the widget registry foundation.
+
+---
+
 ## Project Schema and Migration
 
 DataBench v2.0 uses project schema version `8`.
@@ -863,7 +897,7 @@ For sensitive data, consider bundling dependencies locally, avoiding public host
 Useful interactions:
 
 - Drag a widget header to move it.
-- Resize widgets using the resize handle.
+- Resize widgets using the bottom-right resize handle. Widget size is saved to project state and should persist when changing pages.
 - Right-click a widget for the context menu.
 - Click **Edit** on a widget to open the Configure inspector.
 - Use page tabs to switch pages.
