@@ -890,7 +890,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DataBench Viewer v2.0.4</title>
+  <title>DataBench Viewer v2.0.5</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <style>
     :root{--bg:#0f172a;--panel:#111827;--panel2:#1f2937;--text:#e5e7eb;--muted:#94a3b8;--accent:#38bdf8;--accent2:#a78bfa;--on-accent:#07111f;--ok:#34d399;--danger:#fb7185;--border:rgba(255,255,255,.14);--canvas:#f8fafc;--card:#fff;--cardText:#0f172a;--grid:#e2e8f0;--shadow:0 16px 40px rgba(0,0,0,.24);--radius:18px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -918,7 +918,7 @@
 <script>
 window.DATABENCH_EMBEDDED_B64 = "__DATABENCH_PROJECT_B64__";
 window.DATABENCH_DEFAULT_PROJECT_URL = "";
-let project=null, activePageId=null, charts=new Map();const tableViewState={};const VIEWER_APP_VERSION='2.0.4';const PROJECT_SCHEMA_VERSION=8;const WIDGET_REGISTRY_VERSION=1;const WIDGET_REGISTRY={table:1,summary:1,pivot:1,kpi:1,bar:1,horizontalBar:1,line:1,pie:1,donut:1,scatter:1,text:1};function normalizeViewerWidget(w){if(!w||!w.type)return w;if(!WIDGET_REGISTRY[w.type]){w.unsupported=true;return w;}w.filters=w.filters||[];w.registryVersion=w.registryVersion||WIDGET_REGISTRY_VERSION;if(w.w==null)w.w=420;if(w.h==null)w.h=300;if(w.x==null)w.x=24;if(w.y==null)w.y=80;if(w.type==='text'&&w.content==null)w.content=w.title||'';return w;}function migrateViewerProject(p){if(!p||typeof p!=='object')p={};const from=Number(p.schemaVersion||1);p.projectType=p.projectType||'databench-project';p.schemaVersion=PROJECT_SCHEMA_VERSION;p.viewer=Object.assign({defaultMode:'responsive',allowFilters:true,mobileLayout:'stacked',pageNavigation:'tabs',schemaVersion:PROJECT_SCHEMA_VERSION},p.viewer||{});p.architecture=Object.assign({engine:'DataBench viewer runtime',widgetRegistryVersion:WIDGET_REGISTRY_VERSION,schemaVersion:PROJECT_SCHEMA_VERSION},p.architecture||{});p.migrations=Array.isArray(p.migrations)?p.migrations:[];if(from<PROJECT_SCHEMA_VERSION)p.migrations.push({fromSchema:from,toSchema:PROJECT_SCHEMA_VERSION,appVersion:VIEWER_APP_VERSION,at:new Date().toISOString()});(p.pages||[]).forEach(pg=>(pg.widgets||[]).forEach(normalizeViewerWidget));return p;}
+let project=null, activePageId=null, charts=new Map();const tableViewState={};const VIEWER_APP_VERSION='2.0.5';const PROJECT_SCHEMA_VERSION=8;const WIDGET_REGISTRY_VERSION=1;const WIDGET_REGISTRY={table:1,summary:1,pivot:1,kpi:1,bar:1,horizontalBar:1,line:1,pie:1,donut:1,scatter:1,text:1};function normalizeViewerWidget(w){if(!w||!w.type)return w;if(!WIDGET_REGISTRY[w.type]){w.unsupported=true;return w;}w.filters=w.filters||[];w.registryVersion=w.registryVersion||WIDGET_REGISTRY_VERSION;if(w.w==null)w.w=420;if(w.h==null)w.h=300;if(w.x==null)w.x=24;if(w.y==null)w.y=80;if(w.type==='text'&&w.content==null)w.content=w.title||'';return w;}function migrateViewerProject(p){if(!p||typeof p!=='object')p={};const from=Number(p.schemaVersion||1);p.projectType=p.projectType||'databench-project';p.schemaVersion=PROJECT_SCHEMA_VERSION;p.viewer=Object.assign({defaultMode:'responsive',allowFilters:true,mobileLayout:'stacked',pageNavigation:'tabs',schemaVersion:PROJECT_SCHEMA_VERSION},p.viewer||{});p.architecture=Object.assign({engine:'DataBench viewer runtime',widgetRegistryVersion:WIDGET_REGISTRY_VERSION,schemaVersion:PROJECT_SCHEMA_VERSION},p.architecture||{});p.migrations=Array.isArray(p.migrations)?p.migrations:[];if(from<PROJECT_SCHEMA_VERSION)p.migrations.push({fromSchema:from,toSchema:PROJECT_SCHEMA_VERSION,appVersion:VIEWER_APP_VERSION,at:new Date().toISOString()});(p.pages||[]).forEach(pg=>(pg.widgets||[]).forEach(normalizeViewerWidget));return p;}
 const $=id=>document.getElementById(id);
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -1011,7 +1011,7 @@ async function loadDefaultHostedProject(){const url=window.DATABENCH_DEFAULT_PRO
 </template>
 
 <script>
-const APP_VERSION = '2.0.4';
+const APP_VERSION = '2.0.5';
 const PROJECT_SCHEMA_VERSION = 8;
 const WIDGET_REGISTRY_VERSION = 1;
 const AUTOSAVE_KEY = 'databench_autosave_current';
@@ -1685,6 +1685,35 @@ function markdownToHtml(md='') {
   return html;
 }
 
+
+function syncRenderedWidgetGeometry(options={}) {
+  const page = activePage();
+  const canvas = $('canvas');
+  if (!page || !canvas) return false;
+  let changed = false;
+  canvas.querySelectorAll('.widget[data-widget]').forEach(el => {
+    const w = (page.widgets || []).find(item => item.id === el.dataset.widget);
+    if (!w) return;
+    const next = {
+      x: Math.round(parseFloat(el.style.left) || Number(w.x || 0)),
+      y: Math.round(parseFloat(el.style.top) || Number(w.y || 0)),
+      w: Math.round(el.offsetWidth || Number(w.w || 0)),
+      h: Math.round(el.offsetHeight || Number(w.h || 0))
+    };
+    if (Math.abs(Number(w.x || 0) - next.x) > 1) { w.x = next.x; changed = true; }
+    if (Math.abs(Number(w.y || 0) - next.y) > 1) { w.y = next.y; changed = true; }
+    if (Math.abs(Number(w.w || 0) - next.w) > 1) { w.w = Math.max(260, next.w); changed = true; }
+    if (Math.abs(Number(w.h || 0) - next.h) > 1) { w.h = Math.max(170, next.h); changed = true; }
+  });
+  if (changed && !options.silent) {
+    renderInspector();
+    queueAutosave();
+  } else if (changed) {
+    queueAutosave();
+  }
+  return changed;
+}
+
 function renderPages() {
   $('pagesBar').innerHTML = state.pages.map(p => `<button class="tab ${p.id===state.activePageId?'active':''}" data-page="${p.id}">${escapeHtml(p.title)}</button>`).join('') + '<button id="miniAddPage" class="tab">+ Page</button>';
 }
@@ -1747,8 +1776,16 @@ function renderWidget(w) {
     showWidgetContextMenu(e.clientX, e.clientY, w.id);
   });
   new ResizeObserver(entries => {
-    const r = entries[0].contentRect;
-    if (Math.abs(w.w-r.width)>2 || Math.abs(w.h-r.height)>2) { w.w=Math.round(r.width); w.h=Math.round(r.height); renderInspector(); renderWidgetContents(w); queueAutosave(); }
+    const r = entries[0].target;
+    const nextW = Math.round(r.offsetWidth || entries[0].contentRect.width);
+    const nextH = Math.round(r.offsetHeight || entries[0].contentRect.height);
+    if (Math.abs(Number(w.w||0)-nextW)>2 || Math.abs(Number(w.h||0)-nextH)>2) {
+      w.w=Math.max(260,nextW);
+      w.h=Math.max(170,nextH);
+      renderInspector();
+      renderWidgetContents(w);
+      queueAutosave();
+    }
   }).observe(el);
   return el;
 }
@@ -2062,6 +2099,7 @@ function rgbToHex(v) { if (!v || v[0] === '#') return v || '#ffffff'; return '#f
 
 
 function cleanProjectForSave() {
+  syncRenderedWidgetGeometry({ silent:true });
   const copy = JSON.parse(JSON.stringify(state));
   copy.appVersion = APP_VERSION;
   copy.schemaVersion = PROJECT_SCHEMA_VERSION;
@@ -2235,7 +2273,7 @@ async function exportStaticSitePackage() {
   let viewerHtml;
   try { viewerHtml = viewerHtmlFromTemplate({ project:null, defaultProjectUrl:'project.databench.json', embedded:false }); }
   catch(err) { console.error(err); return toast('Viewer template is missing.'); }
-  viewerHtml = viewerHtml.replace('<title>DataBench Viewer v2.0.4</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
+  viewerHtml = viewerHtml.replace('<title>DataBench Viewer v2.0.5</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
   const manifest = JSON.stringify({ appName:'DataBench', appVersion:APP_VERSION, schemaVersion:PROJECT_SCHEMA_VERSION, projectName:project.projectName || 'Untitled DataBench Project', generatedAt:new Date().toISOString(), files:['index.html','project.databench.json','databench.manifest.json','README.txt'], viewer:{defaultProjectUrl:'project.databench.json'} }, null, 2);
   const readme = `DataBench static viewer package\n\nOpen index.html from a static web server, or upload this folder to GitHub Pages, Netlify, Cloudflare Pages, or your web host.\n\nFiles:\n- index.html: mobile-friendly DataBench Viewer\n- project.databench.json: dashboard project and embedded source data\n\nHosted URL pattern:\n/databench/viewer/?project=../projects/example.databench.json\n\nGenerated: ${new Date().toISOString()}\nProject: ${project.projectName || 'Untitled DataBench Project'}\n`;
   const baseName = safeFileName(project.projectName || 'databench');
@@ -2299,7 +2337,7 @@ function exportMobileViewerHtml() {
   let html;
   try { html = viewerHtmlFromTemplate({ project, embedded:true }); }
   catch(err) { console.error(err); return toast('Mobile viewer template is missing.'); }
-  html = html.replace('<title>DataBench Viewer v2.0.4</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
+  html = html.replace('<title>DataBench Viewer v2.0.5</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
   downloadText(`${safeFileName(project.projectName || 'databench')}.databench.viewer.html`, html, 'text/html');
   toast('Mobile viewer HTML exported.');
 }
@@ -2319,7 +2357,7 @@ function exportCurrentPageHtml() {
 async function canvasScreenshot(pageId=null) {
   const originalPageId = state.activePageId;
   const originalSelectedId = state.selectedWidgetId;
-  if (pageId) { state.activePageId = pageId; state.selectedWidgetId = null; renderPages(); renderCanvas(); queueAutosave(); }
+  if (pageId) { syncRenderedWidgetGeometry({ silent:true }); state.activePageId = pageId; state.selectedWidgetId = null; renderPages(); renderCanvas(); queueAutosave(); }
   await new Promise(r => requestAnimationFrame(() => setTimeout(r, 120)));
   const canvasEl = $('canvas');
   const width = Math.max(1200, canvasEl.scrollWidth || canvasEl.offsetWidth);
@@ -2850,7 +2888,7 @@ document.addEventListener('click', e => {
     toast('Page renamed.');
     return;
   }
-  const pageId = e.target.dataset?.page; if (pageId) { state.activePageId = pageId; state.selectedWidgetId = null; renderAll(); }
+  const pageId = e.target.dataset?.page; if (pageId) { syncRenderedWidgetGeometry({ silent:true }); state.activePageId = pageId; state.selectedWidgetId = null; renderAll(); commitHistory(); }
   const wid = e.target.dataset?.select; if (wid) { openWidgetEditor(wid); }
   const matRel = e.target.dataset?.materializeRel;
   if (matRel) { const rel = (state.relationships || []).find(r => r.id === matRel); if (rel) createJoinedSource(rel); }
@@ -2868,6 +2906,13 @@ document.addEventListener('input', e => {
     queueAutosave();
   }
 });
+window.addEventListener('pointerup', () => {
+  if (syncRenderedWidgetGeometry({ silent:true })) commitHistory();
+});
+window.addEventListener('beforeunload', () => {
+  syncRenderedWidgetGeometry({ silent:true });
+});
+
 document.addEventListener('keydown', e => {
   if (e.target.id === 'pageTitleInput' && e.key === 'Enter') {
     e.preventDefault();
