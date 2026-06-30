@@ -1,44 +1,73 @@
 # DataBench
 
-**DataBench** is a browser-based data visualization and analysis workbench for quick spreadsheet-to-dashboard exploration.
+**DataBench** is a browser-based data visualization and analysis workbench for turning messy spreadsheet data into useful dashboards, reports, and mobile-friendly viewer pages.
 
-Upload a CSV or XLSX file, generate default table and summary pages, build charts on a multi-page canvas, create calculated fields, link datasets, apply filters, customize themes, and export your work as JSON, HTML, PNG, PDF, PowerPoint, or a mobile-friendly viewer file.
+Upload CSV/XLSX data, inspect fields, clean common spreadsheet problems, build charts and pivot tables, create calculated fields, link datasets, customize themes, save projects as JSON, and publish dashboards as standalone viewer files or static sites.
 
-DataBench is designed for fast, lightweight, “good enough to understand the data” analysis without setting up a database, BI server, notebook, or build system.
+DataBench is intentionally lightweight: no backend, no database server, no account system, and no build step required for basic use.
 
 ---
 
 ## Current Version
 
-**DataBench Editor v1.4.1**  
-**DataBench Viewer v1.0-style initial release**
+**DataBench Editor v2.0.4**  
+**DataBench Viewer v2.0.4**  
+**Project schema version: 8**
 
-The project currently ships as static browser files:
+The project currently ships as two static browser apps:
 
 - `databench.html` — the full desktop-oriented editor/workbench
-- `databench-viewer.html` — a mobile-friendly dashboard viewer
+- `databench-viewer.html` — the mobile-friendly dashboard viewer
 
-Both are plain HTML/CSS/JS files that can be opened locally or hosted on a static web server.
+The old `quickviz_suite.html` compatibility copy is no longer maintained.
+
+---
+
+## What DataBench Is For
+
+DataBench is for the moment when someone has a spreadsheet and needs to understand it quickly.
+
+It is useful for:
+
+- quick spreadsheet exploration
+- small dashboards
+- repair clinic/event metrics
+- classroom data activities
+- maker space reports
+- inventory snapshots
+- survey summaries
+- lightweight business intelligence
+- quick PDF/PPT/dashboard exports
+- mobile-friendly dashboard sharing
+
+It is not intended to replace full enterprise BI platforms, data warehouses, or governed analytics systems.
 
 ---
 
 ## Highlights
 
-- Runs in the browser with no backend required
-- Uploads CSV and XLSX files
+- Runs entirely in the browser
+- No backend required
+- Uploads CSV, XLSX, XLS, and XLSM data files
 - Imports published Google Sheets CSV links
 - Creates default table pages for uploaded datasets
 - Creates automatic data summary pages
+- Provides a Home screen on startup
+- Includes autosave with LED-style status indicator
+- Saves and loads `.databench.json` project files
 - Supports multi-page dashboard canvases
 - Adds draggable, resizable widgets
-- Supports charts, tables, KPI cards, summaries, and pivot tables
-- Provides dimensions, measures, aggregations, and calculated fields
-- Links datasets using matching key fields
-- Saves and loads full projects as JSON
-- Includes autosave with an LED-style save-status indicator
-- Includes light, dark, professional, and playful UI themes
-- Exports to HTML, PNG, PDF, PPTX, JSON, CSV, and standalone mobile viewer HTML
-- Includes a separate mobile-friendly viewer for sharing finished dashboards
+- Supports tables, charts, KPIs, summaries, pivot tables, and text/markdown widgets
+- Uses dimensions, measures, aggregations, calculated fields, filters, and joins
+- Includes data prep and field profiling tools
+- Includes page layout tools, snap-to-grid, alignment, and page size presets
+- Includes professional and playful themes with contrast checks
+- Exports JSON, CSV, HTML, PNG, PDF, PPTX, standalone mobile viewer HTML, and static site packages
+- Includes a separate mobile-friendly viewer
+- Supports hosted project URLs and QR-code sharing helpers
+- Includes a command palette with `Ctrl/Cmd + K`
+- Includes project migration support for older saved projects
+- Includes a widget registry foundation for future extension
 
 ---
 
@@ -46,10 +75,19 @@ Both are plain HTML/CSS/JS files that can be opened locally or hosted on a stati
 
 1. Download or clone this repository.
 2. Open `databench.html` in a modern browser.
-3. Click **Load Sample Project** to explore the app immediately, or upload your own CSV/XLSX file.
-4. Use the canvas to add and arrange tables, charts, KPI cards, summaries, and pivot tables.
-5. Save your work with **Save Project JSON**.
-6. To share a mobile-friendly version, use **Mobile Viewer** from the export toolbar.
+3. The **Home** dialog opens automatically.
+4. Choose one of the startup actions:
+   - **New project**
+   - **Open data file**
+   - **Open project JSON**
+   - **Restore autosave**
+   - **Load sample project**
+   - **Open viewer**
+   - **Health check**
+5. Upload a CSV/XLSX file or load the sample project.
+6. Build dashboard pages with tables, charts, KPIs, summaries, pivot tables, and text widgets.
+7. Save your work with **Save JSON**.
+8. Share or publish using **Mobile Viewer**, **Static Site**, **Publish Link**, PDF, PPTX, PNG, or HTML export.
 
 No installation is required for basic use.
 
@@ -57,20 +95,48 @@ No installation is required for basic use.
 
 ## Recommended Repository Structure
 
-For local development or static hosting, use this structure:
+For static hosting, use this layout:
 
 ```text
-.
-├── index.html              # DataBench editor, copied from databench.html
-├── viewer/
-│   └── index.html          # DataBench viewer, copied from databench-viewer.html
-├── projects/
-│   └── example.databench.json
-├── README.md
-└── LICENSE
+/databench/
+  index.html              # copy databench.html here
+  viewer/
+    index.html            # copy databench-viewer.html here
+  projects/
+    example.databench.json
+  README.md
+  LICENSE
 ```
 
-If you prefer to keep the original file names during development, a minimal repository can also look like this:
+With this structure:
+
+- The editor lives at `/databench/`.
+- The viewer lives at `/databench/viewer/`.
+- Hosted project JSON files can live at `/databench/projects/`.
+
+The editor’s **Open Viewer** button opens:
+
+```text
+./viewer/
+```
+
+The viewer’s **Editor** button returns to:
+
+```text
+../
+```
+
+A hosted project can be opened in the viewer with:
+
+```text
+/databench/viewer/?project=../projects/example.databench.json
+```
+
+---
+
+## Local File Layout
+
+For simple local use, the repository can also be kept flat:
 
 ```text
 .
@@ -80,93 +146,102 @@ If you prefer to keep the original file names during development, a minimal repo
 └── LICENSE
 ```
 
----
+Open `databench.html` directly in a browser.
 
-## Suggested Deployment Layout
+Some browser security rules may limit certain file/URL workflows when opening HTML from `file://`. For publishing and hosted project links, use a small local server or static host.
 
-The editor and viewer are designed to work together with this hosted layout:
+Example local server:
 
-```text
-/databench/           # editor
-/databench/viewer/    # viewer
-/databench/projects/  # optional hosted project JSON files
+```bash
+python3 -m http.server 8000
 ```
 
-Recommended deployment files:
+Then open:
 
 ```text
-databench/
-  index.html              # use databench.html here
-  viewer/
-    index.html            # use databench-viewer.html here
-  projects/
-    example.databench.json
-```
-
-With this layout:
-
-- The editor’s **Open Viewer** button opens `./viewer/`.
-- The viewer’s **Editor** button returns to `../`.
-- The viewer can load a hosted project with a URL parameter:
-
-```text
-/databench/viewer/?project=../projects/example.databench.json
+http://localhost:8000/databench.html
 ```
 
 ---
 
 ## Editor vs Viewer
 
-DataBench now has two related experiences.
+DataBench has two related apps.
 
 ### DataBench Editor
 
-The editor is the full workbench. Use it to:
+The editor is the full authoring workbench. Use it to:
 
-- Upload files
-- Import Google Sheets CSV links
-- Create charts and dashboard pages
-- Build pivot tables
-- Define calculated fields
-- Link datasets
-- Configure filters
-- Customize themes
-- Save project JSON
-- Export PDF, PPTX, PNG, HTML, CSV, and mobile viewer files
+- upload spreadsheets
+- import published Google Sheets CSV links
+- inspect and clean data
+- create charts and dashboard pages
+- build pivot tables
+- add text/markdown notes
+- create calculated fields
+- link datasets through relationships
+- configure page and widget filters
+- customize themes
+- arrange layouts
+- save project JSON
+- run health checks
+- export dashboards and published packages
 
 ### DataBench Viewer
 
-The viewer is for reading, presenting, and sharing finished dashboards. It is mobile-friendly and intentionally simpler than the editor.
+The viewer is for reading, presenting, and sharing finished dashboards. It is intentionally simpler than the editor and is optimized for phones, tablets, and presentation use.
 
-Use it to:
+The viewer supports:
 
-- Open a `.databench.json` project file
-- Open a hosted project with `?project=...`
-- Open a standalone viewer HTML file exported from the editor
-- Browse dashboard pages
-- View charts, tables, KPIs, summaries, and pivot tables
-- Use page filters and chart click-to-filter behavior
-- View widgets in full-screen mode
+- opening `.databench.json` project files
+- opening hosted project URLs with `?project=...`
+- opening local preview projects with `?source=local`
+- loading standalone embedded viewer exports
+- loading a default `project.databench.json` next to `index.html` in static-site exports
+- browsing pages
+- page filters
+- filter dropdowns populated from unique field values
+- chart click/tap-to-filter
+- tables with search, sorting, and pagination
+- mobile stacked widget layout
+- desktop/tablet canvas-style layout
+- fullscreen widget view
+- presentation mode
+- sharing panel with link and QR-code helper
 
-The viewer does not include authoring tools like upload parsing, joins, calculated-field editing, widget dragging/resizing, or export configuration.
+The viewer does not include authoring features such as spreadsheet upload parsing, widget dragging/resizing, calculated-field editing, data modeling, or export configuration.
 
 ---
 
 ## Data Transfer Between Editor and Viewer
 
-There are three supported transfer paths.
+DataBench supports several transfer paths.
 
-### 1. Manual Project JSON
+### 1. Project JSON
 
 In the editor:
 
-1. Click **Save Project JSON**.
+1. Click **Save JSON**.
 2. Open the viewer.
-3. Load the saved JSON file.
+3. Open the saved `.databench.json` file.
 
-This is the simplest portable workflow.
+This is the safest long-term storage and archive format.
 
-### 2. Standalone Mobile Viewer HTML
+### 2. Preview Viewer
+
+In the editor:
+
+1. Click **Preview Viewer**.
+2. The current project is saved to local browser storage.
+3. The viewer opens with:
+
+```text
+/viewer/?source=local
+```
+
+This is useful while designing a dashboard.
+
+### 3. Standalone Mobile Viewer HTML
 
 In the editor:
 
@@ -174,70 +249,91 @@ In the editor:
 2. Click **Mobile Viewer**.
 3. Share the exported `.databench.viewer.html` file.
 
-The exported viewer HTML contains the project data embedded inside the file, so the recipient does not need the editor.
+The exported HTML contains the current project embedded in the file.
 
-### 3. Hosted Project URL
+### 4. Hosted Project Link
 
-Host a project JSON file, then open it in the viewer with a URL like:
+Host a project JSON file and open it from the viewer:
 
 ```text
 /databench/viewer/?project=../projects/example.databench.json
 ```
 
-This is useful for static websites, intranets, GitHub Pages, Netlify, Cloudflare Pages, and similar hosting.
+This is useful for GitHub Pages, Netlify, Cloudflare Pages, intranets, and simple static web servers.
+
+### 5. Static Site Export
+
+In the editor, click **Static Site** to export a publishable package containing:
+
+```text
+index.html
+project.databench.json
+databench.manifest.json
+README.txt
+```
+
+The exported `index.html` is a viewer page that automatically loads `project.databench.json` from the same folder.
 
 ---
 
-## Browser Requirements
+## Home Screen
 
-Recommended browsers:
+DataBench opens with the **Home** dialog displayed.
 
-- Chrome / Chromium
-- Edge
-- Firefox
-- Safari
+Available Home actions:
 
-For best results, use a current desktop browser for editing. The viewer is optimized for phones and tablets, but very large datasets can still strain mobile browsers.
+- **New project** — start with an empty project
+- **Open data file** — upload CSV/XLSX/XLS/XLSM as a new data source
+- **Open project JSON** — load a saved `.databench.json` project
+- **Restore autosave** — recover browser-saved work
+- **Load sample project** — load built-in sample data and dashboards
+- **Open viewer** — open the mobile-friendly dashboard viewer
+- **Health check** — scan the current project for common issues
 
----
-
-## External Libraries
-
-DataBench uses CDN-loaded browser libraries for spreadsheet parsing, charts, and exports.
-
-Commonly used libraries include:
-
-- **SheetJS** for XLSX parsing
-- **Chart.js** for chart rendering
-- **html2canvas** for canvas/page image export
-- **jsPDF** for PDF export
-- **PptxGenJS** for PowerPoint export
-
-Because these are loaded from CDNs, internet access is currently required for full functionality unless the dependencies are bundled locally in a future release.
+The Home dialog can be closed and reopened with the **Home** button in the toolbar.
 
 ---
 
-## Core Concepts
+## Data Sources
 
-### Data Sources
+A data source is a table loaded into the project.
 
-A data source is an uploaded or imported table. Sources can come from:
+Sources can come from:
 
 - CSV files
-- XLSX files
+- XLSX/XLS/XLSM spreadsheet files
 - Published Google Sheets CSV URLs
 - Built-in sample data
 - Joined/materialized datasets created inside DataBench
 
-Each uploaded source gets a default table page and a summary page.
+Each uploaded source receives:
 
-### Pages
+- a default table page
+- a default summary page
+- field type detection
+- role hints for dimensions/measures
+- optional field profiles in Data Prep
 
-A project can contain multiple pages. Pages act like dashboard sheets or slides. Each page has a canvas where widgets can be placed and arranged.
+---
 
-### Widgets
+## Tables
 
-Widgets are objects placed on a page. Current widget types include:
+Table widgets support:
+
+- search
+- sortable column headers
+- pagination
+- row count notes
+- horizontally scrollable tables for wide data
+- viewer-side search/sort/pagination
+
+Default pages for uploaded files are table pages so users can inspect raw data before building charts.
+
+---
+
+## Widgets
+
+Current widget types include:
 
 - Table
 - Bar chart
@@ -249,27 +345,39 @@ Widgets are objects placed on a page. Current widget types include:
 - KPI card
 - Data summary
 - Pivot table
+- Text/Markdown
 
-Widgets can be selected, configured, moved, resized, duplicated, deleted, and exported.
+Widgets can be:
 
-### Dimensions and Measures
+- selected
+- configured
+- dragged by the widget header
+- resized
+- duplicated
+- deleted
+- sent forward/backward
+- exported through page/project export workflows
 
-DataBench uses a simple BI-style model:
+Right-click a widget to open the context menu.
 
-- **Dimensions** group or categorize rows.
+---
+
+## Dimensions, Measures, and Aggregations
+
+DataBench uses a lightweight BI-style model.
+
+- **Dimensions** group rows into categories.
 - **Measures** calculate numeric or count-based values.
 
 Example:
 
-- Dimension: `Department`
-- Measure: `Sales`
-- Aggregation: `sum`
+```text
+Dimension: Region
+Measure: Revenue
+Aggregation: Sum
+```
 
-This produces total sales by department.
-
-### Aggregations
-
-Supported aggregation functions include:
+Supported aggregations include:
 
 - Sum
 - Average
@@ -284,7 +392,49 @@ Supported aggregation functions include:
 - Last
 - Percent of total
 
-### Calculated Fields
+---
+
+## Charts
+
+Supported chart types include:
+
+- Bar
+- Horizontal bar
+- Line
+- Pie
+- Donut
+- Scatter
+
+Chart options include:
+
+- data source
+- dimension
+- measure
+- aggregation
+- sort by dimension or measure
+- ascending/descending sort
+- Top N groups
+- custom chart colors
+- chart click/tap-to-filter behavior
+
+---
+
+## Pivot Tables
+
+Pivot table widgets support:
+
+- row field
+- column field
+- measure field
+- aggregation
+- row totals
+- grand totals
+
+Pivot tables are available in both the editor and viewer.
+
+---
+
+## Calculated Fields
 
 Calculated fields add derived columns to a source table.
 
@@ -311,30 +461,39 @@ Supported helper functions include:
 - `ifelse(condition, trueValue, falseValue)`
 - `round(value, digits)`
 
-Field names with spaces can be referenced using brackets:
+Use brackets for field names with spaces:
 
 ```text
 [Order Date]
 [Total Revenue]
 ```
 
-### Relationships and Joins
+---
 
-DataBench can link tables using shared key fields. The Data Model tools can:
+## Relationships and Joins
 
-- Suggest matching key fields
-- Preview match counts
-- Warn about blank keys
-- Warn about duplicate keys
-- Save relationships
-- Materialize relationships into joined tables
-- Create left joins or inner joins
+DataBench can link datasets using shared key fields.
 
-### Filters
+The Data Model tools can:
+
+- suggest matching key fields
+- preview match counts
+- warn about blank keys
+- warn about duplicate keys
+- save relationships
+- delete relationships
+- materialize relationships into joined tables
+- create left joins or inner joins
+
+Relationships are currently materialized into joined tables rather than backed by a live query model.
+
+---
+
+## Filters
 
 Filters can be applied at the page or widget level.
 
-Supported filter operators include:
+Supported operators include:
 
 - Equals
 - Does not equal
@@ -347,7 +506,75 @@ Supported filter operators include:
 - Before date
 - After date
 
-Charts can also support click-to-filter behavior for quick exploration.
+The viewer’s filter value control uses a dropdown populated with unique values from the selected field. Blank values are shown as `(blank)`, and very large unique-value lists are capped for usability.
+
+On mobile, viewer filters appear in a slide-up filter drawer.
+
+---
+
+## Data Prep and Field Profiles
+
+The editor includes a **Data Prep & Field Profiles** panel.
+
+Field profiles show:
+
+- detected field type
+- suggested role
+- blank values
+- unique values
+- possible key status
+- numeric min/max/average
+- detected date range
+- top value distribution
+- likely Excel serial-date warnings
+
+Cleanup tools include:
+
+- rename field
+- change field type
+- convert Excel serial dates to ISO dates
+- trim text
+- replace blank values
+- remove empty rows
+- remove duplicate rows
+
+Field rename attempts to update charts, pivots, filters, and widget references where possible.
+
+---
+
+## Layout Tools
+
+The editor includes dashboard layout tools:
+
+- page size presets
+- custom page dimensions
+- snap to grid
+- grid size control
+- snap selected widget
+- align selected widget left/center/right
+- align selected widget top/middle/bottom
+- fit page to widgets
+- arrange widgets to grid
+- duplicate page
+
+Page width/height is saved in project JSON and respected by the viewer.
+
+On phones, the viewer transforms dashboard pages into stacked cards for readability.
+
+---
+
+## Text / Markdown Widgets
+
+Text widgets can be used for:
+
+- dashboard notes
+- page introductions
+- headings
+- explanations
+- bullet lists
+- simple report-style commentary
+
+Text widgets render in both the editor and viewer.
 
 ---
 
@@ -355,7 +582,7 @@ Charts can also support click-to-filter behavior for quick exploration.
 
 DataBench includes built-in themes ranging from professional to playful.
 
-Examples include:
+Themes include:
 
 - Light Professional
 - Dark Professional
@@ -369,13 +596,17 @@ Examples include:
 
 Theme settings can control:
 
-- Accent colors
-- App background
-- Panel colors
-- Text colors
-- Canvas color
-- Card color
-- Grid color
+- accent colors
+- app background
+- panel colors
+- text colors
+- canvas color
+- card color
+- grid color
+
+Theme Studio includes a live contrast report. Project Health Check also flags obvious low-contrast combinations.
+
+The viewer applies contrast-aware text handling so light card/table backgrounds remain readable inside dark themes.
 
 ---
 
@@ -385,122 +616,210 @@ DataBench includes browser-based autosave using `localStorage`.
 
 Autosave behavior:
 
-- Saves project state automatically as changes happen
-- Debounces rapid edits
-- Periodically flushes unsaved changes
-- Saves before tab close when possible
-- Saves when the tab becomes hidden
-- Maintains a backup autosave copy
-- Can restore from current or older autosave slots
+- saves project state automatically as changes happen
+- debounces rapid edits
+- periodically flushes unsaved changes
+- saves before tab close when possible
+- saves when the tab becomes hidden
+- maintains a backup autosave copy
+- restores current or older autosave slots
+- records recent browser projects
 
 The header includes an LED-style autosave indicator:
 
-- **Dark** means there are unsaved changes or autosave is pending.
+- **Dark** means changes are pending or unsaved.
 - **Green/lit** means the latest state has been saved.
 - **Red** means autosave failed, usually because storage is unavailable or full.
 
-Autosave is convenient, but project JSON remains the safest long-term storage format.
+Autosave is convenient, but downloaded project JSON remains the safest long-term storage format.
 
 ---
 
-## Saving and Loading Projects
+## Recent Browser Projects
 
-Use **Save Project JSON** to download a `.json` project file. Use **Load JSON** to restore a saved project.
+Autosaved projects appear in the Home dialog under **Recent browser projects**.
 
-Project JSON stores the project structure, including:
+These are stored in browser local storage. They are useful for convenience, but they should not replace explicit `.databench.json` backups for important work.
 
-- Version metadata
-- Data sources
-- Pages
-- Widgets
-- Filters
-- Relationships
-- Calculated fields
-- Theme settings
-- Viewer settings
+---
 
-Suggested project extension:
+## Command Palette
+
+Open the command palette with:
+
+```text
+Ctrl/Cmd + K
+```
+
+The command palette supports:
+
+- typing to search commands
+- arrow-key navigation
+- Enter to run a command
+- Escape to close
+- click-outside to close
+
+Commands include common project actions, exports, publishing tools, widget creation, layout tools, undo/redo, and panel toggles.
+
+---
+
+## Project Health Check
+
+The editor includes a **Health Check** tool.
+
+It reports common issues such as:
+
+- missing data sources
+- missing pages
+- widgets with incomplete configuration
+- unsupported widget types
+- missing widget IDs
+- low-contrast widget/theme combinations
+- project schema details
+- widget registry status
+- optional dependency availability
+- export/publishing dependency notes
+
+Run Health Check before publishing or sharing a dashboard.
+
+---
+
+## Publishing and Sharing
+
+DataBench includes several publishing workflows.
+
+### Save JSON
+
+Downloads the editable project file.
+
+Suggested extension:
 
 ```text
 .databench.json
 ```
 
+### Mobile Viewer
+
+Exports a standalone HTML viewer with the current project embedded.
+
+This is the easiest way to share a finished dashboard with someone who does not need editing tools.
+
+### Preview Viewer
+
+Saves the current project to local storage and opens the viewer with:
+
+```text
+?source=local
+```
+
+### Open Viewer
+
+Opens the deployed viewer at:
+
+```text
+./viewer/
+```
+
+### Publish Link
+
+Helps build a hosted viewer URL and QR code.
+
+Example:
+
+```text
+/databench/viewer/?project=../projects/example.databench.json
+```
+
+### Static Site
+
+Exports a publishable static viewer package containing:
+
+```text
+index.html
+project.databench.json
+databench.manifest.json
+README.txt
+```
+
+Use this for GitHub Pages, Netlify, Cloudflare Pages, an intranet, or any simple static web host.
+
 ---
 
 ## Export Options
 
-DataBench includes several export tools.
+DataBench supports:
 
-### Save Project JSON
-
-Saves the editable project file.
-
-### Export Mobile Viewer
-
-Exports a standalone, mobile-friendly viewer HTML file with the current project embedded.
-
-This is the recommended way to share a finished dashboard with people who do not need editing tools.
-
-### Open Viewer
-
-Opens the viewer app at `./viewer/` when using the recommended deployment layout.
-
-### Export HTML
-
-Exports the current project/page as browser-viewable HTML.
-
-### Export PNG
-
-Exports the current page as an image.
-
-### Export PDF
-
-Exports project pages into a PDF document.
-
-### Export PPTX
-
-Exports project pages as slides in a PowerPoint deck.
-
-### Export CSV
-
-Exports selected widget/source data as CSV.
+- project JSON
+- standalone mobile viewer HTML
+- static site package
+- current page HTML
+- current page PNG
+- multi-page PDF
+- PowerPoint PPTX
+- selected/source CSV
 
 Export quality depends on browser rendering, loaded chart libraries, and available memory.
 
 ---
 
-## Keyboard and Interaction Notes
+## Project Schema and Migration
 
-Useful interactions include:
+DataBench v2.0 uses project schema version `8`.
 
-- Drag a widget header to move a widget.
-- Resize widgets using resize handles.
-- Right-click a widget to open a context menu.
-- Use the inspector to edit selected widget settings.
-- Use page tabs to switch between dashboard pages.
-- Use **Undo** and **Redo** for recent changes.
-- Use **Restore Autosave** to recover the last autosaved project.
+Project JSON includes architecture metadata such as:
 
-Panel shortcuts:
+- `projectType`
+- `appVersion`
+- `schemaVersion`
+- `createdAt`
+- `updatedAt`
+- `viewer`
+- `architecture`
+- `migrationHistory`
+- widget registry metadata
 
-- `Ctrl/Cmd + Shift + L`: toggle the left panel
-- `Ctrl/Cmd + Shift + R`: toggle the right panel
+Older projects are normalized through a migration layer when loaded in the editor or viewer. Migration history is stored in project JSON.
 
 ---
 
-## Known Limitations
+## Widget Registry
 
-DataBench is intentionally lightweight and browser-only. Current limitations include:
+DataBench includes a widget registry foundation.
 
-- Very large files may slow down or crash the browser.
-- Export fidelity may vary by browser.
-- CDN dependencies require internet access.
-- Google Sheets import requires a published CSV link, not a private sheet link.
-- Relationships are materialized into joined tables rather than backed by a full query engine.
-- Formula support is useful but not a complete spreadsheet formula language.
-- Autosave depends on browser local storage limits.
-- The mobile viewer is optimized for finished dashboards, not dashboard editing.
-- The app currently uses a single-file architecture, which is convenient but harder to maintain as the project grows.
+The registry tracks supported widget types, normalizes widget defaults, and helps Health Check identify unsupported widgets.
+
+This is groundwork for future plugin-style widgets.
+
+---
+
+## Browser Requirements
+
+Recommended browsers:
+
+- Chrome / Chromium
+- Edge
+- Firefox
+- Safari
+
+Use a current desktop browser for editing. The viewer is optimized for phones and tablets, but very large projects can still strain mobile browsers.
+
+---
+
+## External Libraries
+
+DataBench uses browser libraries for spreadsheet parsing, charts, and exports.
+
+Common dependencies include:
+
+- **SheetJS** for XLSX parsing
+- **Chart.js** for charts
+- **html2canvas** for page/image capture
+- **jsPDF** for PDF export
+- **PptxGenJS** for PowerPoint export
+- **JSZip** for static-site package export
+- QR-code support for publish/share helpers
+
+These are currently CDN-loaded in the browser. Internet access may be required for full functionality unless dependencies are bundled locally in a future release.
 
 ---
 
@@ -510,21 +829,65 @@ DataBench runs in the browser. Uploaded files are processed locally by the app u
 
 Important notes:
 
-- Files are not intentionally uploaded to a server by DataBench.
-- Autosave data is stored in the browser’s local storage.
+- Files are not intentionally uploaded to a DataBench server.
+- Autosave data is stored in browser local storage.
+- Recent projects are stored in browser local storage.
 - CDN libraries are loaded from third-party URLs.
 - Published Google Sheets CSV imports fetch data from the provided URL.
 - Hosted project links load project JSON from the URL you provide.
+- Standalone viewer exports embed project data inside the HTML file.
 
-For sensitive data, consider bundling dependencies locally, avoiding public hosted project links, and reviewing the source before use.
+For sensitive data, consider bundling dependencies locally, avoiding public hosted project links, disabling autosave, or reviewing the source before use.
+
+---
+
+## Known Limitations
+
+- Very large spreadsheets may slow down or crash the browser.
+- Export fidelity may vary by browser.
+- CDN dependencies require internet access unless bundled locally.
+- Google Sheets import requires a published CSV link, not a private sheet link.
+- Relationships are materialized into joined tables rather than backed by a full query engine.
+- Formula support is useful but not a full spreadsheet formula language.
+- Autosave depends on browser local storage limits.
+- Recent projects are local to one browser/device.
+- Static site ZIP export depends on JSZip availability.
+- PDF/PPT/PNG export depends on browser rendering and third-party export libraries.
+- The mobile viewer is for finished dashboards, not editing.
+- The current implementation is still mostly single-file HTML, which is convenient but harder to maintain at scale.
+
+---
+
+## Keyboard and Interaction Notes
+
+Useful interactions:
+
+- Drag a widget header to move it.
+- Resize widgets using the resize handle.
+- Right-click a widget for the context menu.
+- Click **Edit** on a widget to open the Configure inspector.
+- Use page tabs to switch pages.
+- Use **Duplicate Page** to copy a page.
+- Use **Undo** and **Redo** for recent changes.
+- Use **Restore** to recover autosaved work.
+- Use **Home** to reopen the startup dialog.
+
+Shortcuts:
+
+```text
+Ctrl/Cmd + K          Open command palette
+Ctrl/Cmd + Shift + L  Toggle left panel
+Ctrl/Cmd + Shift + R  Toggle right panel
+Escape                Close overlays/menus where supported
+```
 
 ---
 
 ## Development Notes
 
-The current version is implemented as static HTML files. This makes distribution easy, but future development may benefit from splitting the code into modules.
+DataBench currently ships as static HTML files. This makes distribution easy, but the project is large enough that future development would benefit from splitting shared logic into modules.
 
-A future source layout might look like this:
+A future source layout could look like:
 
 ```text
 src/
@@ -532,10 +895,13 @@ src/
 │   ├── app.js
 │   ├── canvas.js
 │   ├── inspector.js
+│   ├── home.js
+│   ├── data-prep.js
 │   └── exports.js
 ├── viewer/
 │   ├── viewer.js
 │   ├── layout.js
+│   ├── filters.js
 │   └── project-loader.js
 ├── shared/
 │   ├── state.js
@@ -544,13 +910,15 @@ src/
 │   ├── charts.js
 │   ├── widgets.js
 │   ├── filters.js
-│   └── themes.js
+│   ├── migrations.js
+│   ├── themes.js
+│   └── exports.js
 └── styles/
     ├── editor.css
     └── viewer.css
 ```
 
-A Vite or similar build setup could eventually make the app easier to test, bundle, and maintain.
+A Vite or similar build setup could eventually make the app easier to test, bundle, and maintain while still exporting static files.
 
 ---
 
@@ -560,19 +928,18 @@ Potential future improvements:
 
 - Fully bundled offline build
 - Shared editor/viewer module architecture
-- More polished mobile viewer navigation
-- Hosted static-site export package
-- QR code for viewer links
-- More polished export templates
-- More chart types
-- Better formula editor with validation
-- Field drag-and-drop builder
+- Dedicated `vendor/` dependency folder for static hosting
+- Test suite for formulas, filters, joins, autosave, migration, and exports
+- Better formula editor with validation and previews
+- More chart types: histogram, area, stacked bar, heatmap, gauge, combo chart
+- Drag-and-drop field buckets for chart building
 - Improved pivot table controls
-- Dashboard layout templates
-- Dataset cleanup tools
-- Column rename/type management
+- More dashboard templates
+- More text/report widgets
+- Image widgets
 - Better accessibility and keyboard navigation
-- Test suite for formulas, filters, joins, autosave, and project migration
+- More robust project schema migration tests
+- Static publishing wizard
 - Optional hosted/cloud version
 
 ---
@@ -582,15 +949,17 @@ Potential future improvements:
 Contributions are welcome. Good first areas to improve include:
 
 - UI polish
-- Mobile viewer polish
-- Accessibility
-- Export reliability
-- Chart configuration options
-- Formula functions
-- Documentation
-- Sample datasets
-- Bug fixes
-- Project schema migration
+- mobile viewer polish
+- accessibility
+- export reliability
+- chart configuration options
+- formula functions
+- documentation
+- sample datasets
+- bug fixes
+- project schema migration
+- offline dependency bundling
+- test coverage
 
 Before making large changes, consider opening an issue or discussion describing the proposed direction.
 
@@ -598,14 +967,14 @@ Before making large changes, consider opening an issue or discussion describing 
 
 ## Suggested GitHub Description
 
-> A browser-based spreadsheet-to-dashboard workbench with charts, pivots, themes, JSON projects, autosave, exports, and a mobile dashboard viewer.
+> A browser-based spreadsheet-to-dashboard workbench with charts, pivots, data prep, themes, autosave, JSON projects, publishing exports, and a mobile dashboard viewer.
 
 ---
 
 ## Suggested Topics
 
 ```text
-data-visualization dashboard csv xlsx spreadsheet chartjs business-intelligence pivot-table html css javascript no-build browser-app mobile-viewer
+data-visualization dashboard csv xlsx spreadsheet chartjs business-intelligence pivot-table html css javascript no-build browser-app mobile-viewer static-site dataviz
 ```
 
 ---
