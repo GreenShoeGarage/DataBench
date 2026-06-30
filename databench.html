@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DataBench v2.0.4</title>
+  <title>DataBench v2.0.8</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -241,11 +241,26 @@
       border-radius: 16px;
       box-shadow: 0 8px 25px rgba(15,23,42,.12);
       overflow: hidden;
-      resize: both;
+      resize: none;
       min-width: 260px;
       min-height: 170px;
     }
     .widget.active { outline: 3px solid var(--accent); }
+    .widget-resize-handle {
+      position: absolute;
+      right: 4px;
+      bottom: 4px;
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      cursor: nwse-resize;
+      z-index: 3;
+      background: linear-gradient(135deg, transparent 0 42%, rgba(15,23,42,.25) 42% 52%, transparent 52% 62%, rgba(15,23,42,.35) 62% 72%, transparent 72%);
+      opacity: .7;
+    }
+    .widget.active .widget-resize-handle,
+    .widget:hover .widget-resize-handle { opacity: 1; }
+    .widget.resizing { outline: 3px solid var(--accent); }
     .widget-head {
       height: 38px;
       display: flex;
@@ -552,7 +567,7 @@
       <div class="brand">
         <div class="logo"></div>
         <div>
-          <h1>DataBench <span class="version">v2.0.4</span></h1>
+          <h1>DataBench <span class="version">v2.0.8</span></h1>
           <p>Quick and dirty data visualization, analysis, themes, pivot tables, PDF/PPT exports, templates, calculated fields, relationships, filters, autosave, and JSON projects.</p>
         </div>
       </div>
@@ -890,13 +905,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DataBench Viewer v2.0.5</title>
+  <title>DataBench Viewer v2.0.8</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <style>
     :root{--bg:#0f172a;--panel:#111827;--panel2:#1f2937;--text:#e5e7eb;--muted:#94a3b8;--accent:#38bdf8;--accent2:#a78bfa;--on-accent:#07111f;--ok:#34d399;--danger:#fb7185;--border:rgba(255,255,255,.14);--canvas:#f8fafc;--card:#fff;--cardText:#0f172a;--grid:#e2e8f0;--shadow:0 16px 40px rgba(0,0,0,.24);--radius:18px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font,Inter,system-ui,sans-serif);min-height:100vh} button,input,select{font:inherit} a.button{box-sizing:border-box;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:.62rem .9rem;background:var(--panel2);color:var(--text);cursor:pointer} button{border:0;border-radius:999px;padding:.62rem .9rem;background:var(--panel2);color:var(--text);cursor:pointer} button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--on-accent,#07111f);font-weight:800} button.ghost,a.button.ghost{background:transparent;border:1px solid var(--border)} input,select{width:100%;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:12px;color:var(--text);padding:.65rem .75rem} label{display:block;font-size:.78rem;color:var(--muted);margin:.6rem 0 .25rem}.hidden{display:none!important}
     header{position:sticky;top:0;z-index:10;background:var(--panel);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:.8rem clamp(.8rem,2vw,1.3rem);display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:.75rem}.logo{width:38px;height:38px;border-radius:12px;background:conic-gradient(from 220deg,var(--accent),var(--accent2),var(--ok),var(--accent));box-shadow:0 0 0 4px rgba(255,255,255,.05)} h1{margin:0;font-size:1.05rem}.brand p{margin:.05rem 0 0;color:var(--muted);font-size:.82rem}.actions{display:flex;gap:.45rem;align-items:center;flex-wrap:wrap}.viewer-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;padding:1rem;max-width:1440px;margin:0 auto}.open-screen{max-width:720px;margin:8vh auto;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:24px;padding:1.2rem;box-shadow:var(--shadow)}.open-screen h2{margin-top:0}.hint{color:var(--muted);font-size:.9rem;line-height:1.45}.nav-row{display:flex;gap:.5rem;align-items:center;justify-content:space-between;flex-wrap:wrap;background:rgba(255,255,255,.045);border:1px solid var(--border);border-radius:20px;padding:.65rem}.page-tabs{display:flex;gap:.4rem;flex-wrap:wrap}.page-tabs button.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--on-accent,#07111f);font-weight:800}.filter-panel{background:rgba(255,255,255,.045);border:1px solid var(--border);border-radius:20px;padding:.8rem}.filter-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:.55rem;align-items:end}.chips{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.55rem}.chip{display:inline-flex;align-items:center;gap:.35rem;border:1px solid var(--border);border-radius:999px;padding:.35rem .45rem .35rem .65rem;background:rgba(255,255,255,.06);font-size:.82rem}.chip button{padding:.12rem .38rem;background:rgba(255,255,255,.12)}.canvas-wrap{overflow:auto;border-radius:24px}.canvas{position:relative;width:1200px;min-height:850px;margin:0 auto;background:var(--canvas);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;border-radius:24px;box-shadow:var(--shadow);padding:0}.widget{position:absolute;border:1px solid rgba(15,23,42,.15);border-radius:16px;background:var(--card);color:var(--cardText);box-shadow:0 12px 30px rgba(15,23,42,.12);overflow:hidden}.widget-head{height:45px;display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:0 .8rem;border-bottom:1px solid rgba(15,23,42,.12);font-weight:850}.widget-head button{font-size:.74rem;padding:.3rem .52rem;background:rgba(15,23,42,.07);color:inherit}.widget-body{height:calc(100% - 45px);padding:.8rem;overflow:auto}.data-table{border-collapse:collapse;width:100%;font-size:12px;color:var(--cardText)}.data-table th,.data-table td{border:1px solid var(--tableBorder,#d7dee8);padding:6px;text-align:left;white-space:nowrap;color:var(--cardText)}.data-table th{background:var(--tableHead,#f1f5f9);color:var(--cardText);font-weight:850}.data-table td{background:transparent}.table-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.55rem}.table-tools input{width:min(260px,100%);padding:.45rem .6rem;font-size:.82rem}.table-tools .pager{display:flex;align-items:center;gap:.35rem;font-size:.78rem;color:var(--cardText);opacity:.8}.data-table th[data-table-sort]{cursor:pointer;user-select:none}.data-table th[data-table-sort]:hover{text-decoration:underline}.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.7rem}.summary-card{border:1px solid var(--tableBorder,#dbe3ee);border-radius:13px;background:var(--summaryCard,rgba(255,255,255,.8));color:var(--cardText);padding:.75rem}.summary-card span{display:block;color:var(--summaryMuted,#64748b);font-size:.82rem;margin-top:.25rem}.kpi{height:100%;display:grid;place-items:center;text-align:center}.kpi b{display:block;font-size:clamp(2.1rem,8vw,4rem);line-height:1}.kpi span{opacity:.68}.widget.text-widget .widget-body{font-size:.95rem;line-height:1.45}.widget.text-widget .widget-body h1,.widget.text-widget .widget-body h2,.widget.text-widget .widget-body h3{margin:.25rem 0 .5rem;line-height:1.15}.widget.text-widget .widget-body p{margin:0 0 .65rem}.widget.text-widget .widget-body ul{margin:.3rem 0 .65rem 1.25rem;padding:0}.modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(2,6,23,.72);padding:1rem}.modal-card{width:min(1080px,96vw);height:min(760px,90vh);background:var(--card);color:var(--cardText);border-radius:22px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}.modal-card .widget-head{height:52px}.modal-body{flex:1;padding:1rem;overflow:auto}.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#020617;color:#fff;border:1px solid var(--border);border-radius:999px;padding:.7rem 1rem;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1}.mobile-layout{display:none}.filter-toggle{display:none}.filter-backdrop{position:fixed;inset:0;z-index:24;background:rgba(2,6,23,.55);backdrop-filter:blur(2px)}.presentation-bar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:60;display:flex;gap:.45rem;background:rgba(2,6,23,.82);border:1px solid var(--border);border-radius:999px;padding:.45rem;box-shadow:var(--shadow)}body.presentation header,body.presentation .nav-row,body.presentation .filter-panel{display:none!important}body.presentation .viewer-shell{padding:0;max-width:none}body.presentation .canvas-wrap{height:100vh;border-radius:0;display:grid;place-items:center;background:var(--bg)}body.presentation .canvas{margin:0 auto;transform-origin:center top}.share-grid{display:grid;grid-template-columns:1fr auto;gap:.7rem;align-items:end}.qr-box{display:grid;place-items:center;border:1px solid var(--tableBorder,#d7dee8);border-radius:18px;padding:1rem;background:#fff}.qr-box img{width:220px;height:220px}.modal-card.share-card{height:auto;max-height:90vh}.modal-card.share-card .modal-body{min-height:0}.viewer-health{display:grid;gap:.55rem}.viewer-health p{margin:.15rem 0}.viewer-health .ok{color:var(--ok)}.viewer-health .warn{color:#fbbf24}.text-content{line-height:1.45}.text-content h1,.text-content h2,.text-content h3{margin:.15rem 0 .55rem;line-height:1.1}.text-content p{margin:.35rem 0}.text-content ul{margin:.35rem 0 .35rem 1.1rem;padding:0}.text-content code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:rgba(15,23,42,.08);border-radius:6px;padding:.1rem .25rem}.text-content a{color:inherit;text-decoration:underline}
-    @media (max-width: 760px){header{align-items:flex-start}.brand p{display:none}.actions{width:100%}.actions button,.actions label,.actions a.button{flex:1;text-align:center}.viewer-shell{padding:.7rem}.filter-panel{position:fixed;left:0;right:0;bottom:0;z-index:30;border-radius:22px 22px 0 0;max-height:78vh;overflow:auto;transform:translateY(110%);transition:transform .22s ease;background:var(--panel)}.filter-panel.open{transform:translateY(0)}.filter-grid{grid-template-columns:1fr}.desktop-layout{display:none}.mobile-layout{display:block}.canvas-wrap{overflow:visible}.canvas{width:100%;min-height:0;background:transparent;box-shadow:none;border-radius:0}.widget{position:relative!important;left:auto!important;top:auto!important;width:100%!important;height:auto!important;min-height:260px;margin:0 0 .8rem;border-radius:18px}.widget.kpi-widget{min-height:160px}.widget.table-widget,.widget.pivot-widget,.widget.summary-widget{min-height:220px}.widget-body{height:auto;min-height:215px}.widget.kpi-widget .widget-body{min-height:115px}.data-table{font-size:11px}.page-tabs{display:none}.page-select-wrap{display:block!important}.nav-row{align-items:stretch}.nav-row>*{width:100%}}
+    .page-stepper{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}.page-stepper button{padding:.48rem .75rem}.mobile-page-bar{display:none}
+    @media (max-width: 760px){html,body{max-width:100%;overflow-x:hidden}body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}header{position:relative;align-items:flex-start;padding:.65rem .55rem}.brand{width:100%;gap:.55rem}.logo{width:30px;height:30px;border-radius:9px}h1{font-size:.92rem;line-height:1.15}.brand p{display:none}.actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.4rem}.actions button,.actions label,.actions a.button{width:100%;padding:.5rem .58rem;font-size:.78rem;text-align:center}.viewer-shell{padding:.55rem;gap:.7rem;max-width:100%;overflow:hidden}.filter-panel{position:fixed;left:0;right:0;bottom:0;z-index:30;border-radius:22px 22px 0 0;max-height:78vh;overflow:auto;transform:translateY(110%);transition:transform .22s ease;background:var(--panel);padding:1rem .85rem calc(1rem + env(safe-area-inset-bottom,0px))}.filter-panel.open{transform:translateY(0)}.filter-grid{grid-template-columns:1fr}.desktop-layout{display:none}.mobile-layout{display:block}.canvas-wrap{width:100%;max-width:100%;overflow:visible;border-radius:0}.canvas{width:100%!important;min-width:0!important;max-width:100%!important;min-height:0!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;margin:0!important}.widget{position:relative!important;left:auto!important;top:auto!important;width:100%!important;max-width:100%!important;height:auto!important;min-height:240px;margin:0 0 .85rem;border-radius:16px;box-shadow:0 10px 24px rgba(2,6,23,.18)}.widget-head{height:auto;min-height:42px;padding:.65rem .7rem;align-items:flex-start}.widget-head strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.widget-head button{flex:0 0 auto}.widget.kpi-widget{min-height:150px}.widget.table-widget,.widget.pivot-widget,.widget.summary-widget{min-height:220px}.widget-body{height:auto!important;min-height:195px;max-width:100%;overflow:auto;-webkit-overflow-scrolling:touch;padding:.65rem}.widget.kpi-widget .widget-body{min-height:105px}.table-tools{align-items:stretch}.table-tools input{width:100%}.table-tools .pager{width:100%;justify-content:space-between}.data-table{font-size:10.5px;min-width:max-content}.data-table th,.data-table td{padding:5px}.summary-grid{grid-template-columns:1fr}.page-tabs{display:none}.page-select-wrap{display:block!important}.nav-row{align-items:stretch;padding:.6rem;border-radius:16px}.nav-row>*{width:100%}.page-stepper{display:none}.page-select-wrap label{margin-top:0}.mobile-page-bar{position:fixed;left:.6rem;right:.6rem;bottom:calc(.55rem + env(safe-area-inset-bottom,0px));z-index:22;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:.45rem;align-items:center;background:rgba(15,23,42,.92);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:999px;padding:.45rem;backdrop-filter:blur(16px)}.mobile-page-bar button{padding:.55rem .7rem;min-width:44px}.mobile-page-bar select{height:42px;border-radius:999px;background:rgba(255,255,255,.08);font-weight:750}.hint#metaLine{font-size:.8rem;text-align:center}.modal{padding:.45rem}.modal-card{width:100vw;height:100dvh;border-radius:0}.toast{bottom:calc(86px + env(safe-area-inset-bottom,0px));max-width:92vw;text-align:center}}
     @media (min-width: 761px){.page-select-wrap{display:none!important}}
   </style>
 </head>
@@ -907,10 +923,11 @@
 </header>
 <div id="openScreen" class="open-screen"><h2>Open a DataBench project</h2><p class="hint">Open a <code>.databench.json</code> project exported from DataBench, or use the editor’s <strong>Export Mobile Viewer</strong> option to create a standalone file that opens directly on phones and tablets.</p><label>Project JSON</label><input id="projectFileBig" type="file" accept="application/json,.json,.databench.json"><p class="hint">Projects are read locally in your browser. Nothing is uploaded. On a hosted site, the viewer can also load a project with <code>?project=../path/to/project.databench.json</code>.</p></div>
 <div id="app" class="viewer-shell hidden">
-  <div class="nav-row"><div class="page-tabs" id="pageTabs"></div><div class="page-select-wrap hidden"><label style="margin-top:0">Page</label><select id="pageSelect"></select></div><div class="hint" id="metaLine"></div></div>
+  <div class="nav-row"><div class="page-tabs" id="pageTabs"></div><div class="page-select-wrap hidden"><label style="margin-top:0">Page</label><select id="pageSelect"></select></div><div class="page-stepper"><button id="prevPageBtn" class="ghost">‹ Previous</button><button id="nextPageBtn" class="ghost">Next ›</button></div><div class="hint" id="metaLine"></div></div>
   <div id="filterPanel" class="filter-panel"><div class="filter-grid"><div><label>Data source</label><select id="filterSource"></select></div><div><label>Field</label><select id="filterField"></select></div><div><label>Value</label><select id="filterValue"><option value="">Choose a value…</option></select></div><button id="addFilterBtn" class="primary">Add Filter</button></div><div id="filterChips" class="chips"></div></div>
   <div class="canvas-wrap"><div id="canvas" class="canvas"></div></div>
 </div>
+<div id="mobilePageBar" class="mobile-page-bar"><button id="mobilePrevPageBtn" aria-label="Previous page">‹</button><select id="mobilePageSelect" aria-label="Page"></select><button id="mobileNextPageBtn" aria-label="Next page">›</button></div>
 <div id="filterBackdrop" class="filter-backdrop hidden"></div>
 <div id="presentationBar" class="presentation-bar hidden"><button id="presentPrevBtn">‹ Prev</button><button id="presentNextBtn">Next ›</button><button id="exitPresentBtn" class="primary">Exit presentation</button></div>
 <div id="modal" class="modal hidden"><div class="modal-card"><div class="widget-head"><strong id="modalTitle">Widget</strong><button id="closeModal">Close</button></div><div id="modalBody" class="modal-body"></div></div></div>
@@ -918,7 +935,7 @@
 <script>
 window.DATABENCH_EMBEDDED_B64 = "__DATABENCH_PROJECT_B64__";
 window.DATABENCH_DEFAULT_PROJECT_URL = "";
-let project=null, activePageId=null, charts=new Map();const tableViewState={};const VIEWER_APP_VERSION='2.0.5';const PROJECT_SCHEMA_VERSION=8;const WIDGET_REGISTRY_VERSION=1;const WIDGET_REGISTRY={table:1,summary:1,pivot:1,kpi:1,bar:1,horizontalBar:1,line:1,pie:1,donut:1,scatter:1,text:1};function normalizeViewerWidget(w){if(!w||!w.type)return w;if(!WIDGET_REGISTRY[w.type]){w.unsupported=true;return w;}w.filters=w.filters||[];w.registryVersion=w.registryVersion||WIDGET_REGISTRY_VERSION;if(w.w==null)w.w=420;if(w.h==null)w.h=300;if(w.x==null)w.x=24;if(w.y==null)w.y=80;if(w.type==='text'&&w.content==null)w.content=w.title||'';return w;}function migrateViewerProject(p){if(!p||typeof p!=='object')p={};const from=Number(p.schemaVersion||1);p.projectType=p.projectType||'databench-project';p.schemaVersion=PROJECT_SCHEMA_VERSION;p.viewer=Object.assign({defaultMode:'responsive',allowFilters:true,mobileLayout:'stacked',pageNavigation:'tabs',schemaVersion:PROJECT_SCHEMA_VERSION},p.viewer||{});p.architecture=Object.assign({engine:'DataBench viewer runtime',widgetRegistryVersion:WIDGET_REGISTRY_VERSION,schemaVersion:PROJECT_SCHEMA_VERSION},p.architecture||{});p.migrations=Array.isArray(p.migrations)?p.migrations:[];if(from<PROJECT_SCHEMA_VERSION)p.migrations.push({fromSchema:from,toSchema:PROJECT_SCHEMA_VERSION,appVersion:VIEWER_APP_VERSION,at:new Date().toISOString()});(p.pages||[]).forEach(pg=>(pg.widgets||[]).forEach(normalizeViewerWidget));return p;}
+let project=null, activePageId=null, charts=new Map();const tableViewState={};const VIEWER_APP_VERSION='2.0.8';const PROJECT_SCHEMA_VERSION=8;const WIDGET_REGISTRY_VERSION=1;const WIDGET_REGISTRY={table:1,summary:1,pivot:1,kpi:1,bar:1,horizontalBar:1,line:1,pie:1,donut:1,scatter:1,text:1};function normalizeViewerWidget(w){if(!w||!w.type)return w;if(!WIDGET_REGISTRY[w.type]){w.unsupported=true;return w;}w.filters=w.filters||[];w.registryVersion=w.registryVersion||WIDGET_REGISTRY_VERSION;if(w.w==null)w.w=420;if(w.h==null)w.h=300;if(w.x==null)w.x=24;if(w.y==null)w.y=80;if(w.type==='text'&&w.content==null)w.content=w.title||'';return w;}function migrateViewerProject(p){if(!p||typeof p!=='object')p={};const from=Number(p.schemaVersion||1);p.projectType=p.projectType||'databench-project';p.schemaVersion=PROJECT_SCHEMA_VERSION;p.viewer=Object.assign({defaultMode:'responsive',allowFilters:true,mobileLayout:'stacked',pageNavigation:'tabs',schemaVersion:PROJECT_SCHEMA_VERSION},p.viewer||{});p.architecture=Object.assign({engine:'DataBench viewer runtime',widgetRegistryVersion:WIDGET_REGISTRY_VERSION,schemaVersion:PROJECT_SCHEMA_VERSION},p.architecture||{});p.migrations=Array.isArray(p.migrations)?p.migrations:[];if(from<PROJECT_SCHEMA_VERSION)p.migrations.push({fromSchema:from,toSchema:PROJECT_SCHEMA_VERSION,appVersion:VIEWER_APP_VERSION,at:new Date().toISOString()});(p.pages||[]).forEach(pg=>(pg.widgets||[]).forEach(normalizeViewerWidget));return p;}
 const $=id=>document.getElementById(id);
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -971,7 +988,7 @@ function applyTheme(){const t=project?.theme||{};const r=document.documentElemen
 function loadProject(p){p=migrateViewerProject(p);project=p;project.pages=project.pages||[];project.sources=project.sources||[];activePageId=project.pages[0]?.id||null;project.pages.forEach(pg=>pg.filters=pg.filters||[]);applyTheme();$('projectTitle').textContent=project.projectName||'DataBench Viewer';$('openScreen').classList.add('hidden');$('app').classList.remove('hidden');renderAll();toast('Project loaded')}
 async function readFile(file){const text=await file.text();loadProject(JSON.parse(text))}
 function renderAll(){for(const c of charts.values())c.destroy();charts.clear();renderNav();renderFilters();renderCanvas()}
-function renderNav(){const pages=project.pages||[];$('pageTabs').innerHTML=pages.map(p=>`<button class="${p.id===activePageId?'active':''}" data-page="${p.id}">${escapeHtml(p.title)}</button>`).join('');$('pageSelect').innerHTML=pages.map(p=>`<option value="${p.id}">${escapeHtml(p.title)}</option>`).join('');$('pageSelect').value=activePageId||'';$('metaLine').textContent=`${pages.length} page${pages.length===1?'':'s'} · ${project.sources?.length||0} source${(project.sources?.length||0)===1?'':'s'}`}
+function renderNav(){const pages=project.pages||[];const options=pages.map(p=>`<option value="${p.id}">${escapeHtml(p.title)}</option>`).join('');$('pageTabs').innerHTML=pages.map(p=>`<button class="${p.id===activePageId?'active':''}" data-page="${p.id}">${escapeHtml(p.title)}</button>`).join('');$('pageSelect').innerHTML=options;$('pageSelect').value=activePageId||'';if($('mobilePageSelect')){$('mobilePageSelect').innerHTML=options;$('mobilePageSelect').value=activePageId||'';}const idx=Math.max(0,pages.findIndex(p=>p.id===activePageId));$('metaLine').textContent=pages.length?`Page ${idx+1} of ${pages.length} · ${project.sources?.length||0} source${(project.sources?.length||0)===1?'':'s'}`:`0 pages · ${project.sources?.length||0} sources`;['prevPageBtn','mobilePrevPageBtn','presentPrevBtn'].forEach(id=>{const el=$(id);if(el)el.disabled=pages.length<2});['nextPageBtn','mobileNextPageBtn','presentNextBtn'].forEach(id=>{const el=$(id);if(el)el.disabled=pages.length<2})}
 function renderFilters(){const srcs=project.sources||[];const currentSource=$('filterSource').value||srcs[0]?.id||'';const currentField=$('filterField').value;$('filterSource').innerHTML=srcs.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');if(currentSource)$('filterSource').value=currentSource;const cols=colsOf($('filterSource').value);$('filterField').innerHTML=cols.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');if(currentField&&cols.includes(currentField))$('filterField').value=currentField;renderFilterValueOptions();const filters=activePage()?.filters||[];$('filterChips').innerHTML=filters.length?filters.map(f=>`<span class="chip">${escapeHtml(sourceName(f.sourceId))} · ${escapeHtml(f.field)} = ${escapeHtml(f.value===''?'(blank)':f.value)} <button data-remove-filter="${f.id}">×</button></span>`).join(''):'<span class="hint">No active page filters. Tap a chart item or add a value filter.</span>'}
 
 function ensurePageLayout(page){if(!page)return;const presets={dashboard:{width:1280,height:720},wide:{width:1280,height:850},letter:{width:816,height:1056},a4:{width:794,height:1123},mobile:{width:390,height:1200}};page.sizePreset=page.sizePreset||'wide';page.width=Number(page.width||presets[page.sizePreset]?.width||1200);page.height=Number(page.height||presets[page.sizePreset]?.height||850)}
@@ -993,14 +1010,14 @@ function chartClick(elements,w,data){if(!elements?.length||!w.dimension||w.dimen
 function aggregate(rows,w){const dim=w.dimension||colsOf(w.sourceId)[0],measure=w.measureCol||colsOf(w.sourceId)[0],groups=new Map();rows.forEach(r=>{const key=dim==='__all__'?'All rows':String(r[dim]??'');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r)});const total=calcAgg(rows,measure,w.agg==='percent of total'?'sum':w.agg,w.countIf);let out=[...groups.entries()].map(([key,group])=>{let value=calcAgg(group,measure,w.agg,w.countIf);if(w.agg==='percent of total')value=total?calcAgg(group,measure,'sum',w.countIf)/total*100:0;return{key,value}});if((w.sortBy||'none')==='dimension')out.sort((a,b)=>String(a.key).localeCompare(String(b.key)));if((w.sortBy||'none')==='measure')out.sort((a,b)=>a.value-b.value);if((w.sortDir||'desc')==='desc')out.reverse();const n=Number(w.topN||0);return out.slice(0,n>0?n:60)}
 function calcAgg(group,col,agg,countIf){if(agg==='count')return group.length;if(agg==='countif')return group.filter(r=>String(r[col])===String(countIf)).length;if(agg==='count distinct')return new Set(group.map(r=>r[col])).size;if(agg==='first')return group.length?group[0][col]:'';if(agg==='last')return group.length?group[group.length-1][col]:'';const nums=group.map(r=>numberish(r[col])).filter(Number.isFinite).sort((a,b)=>a-b);if(!nums.length)return 0;if(agg==='sum'||agg==='percent of total')return nums.reduce((a,b)=>a+b,0);if(agg==='average')return nums.reduce((a,b)=>a+b,0)/nums.length;if(agg==='median'){const m=Math.floor(nums.length/2);return nums.length%2?nums[m]:(nums[m-1]+nums[m])/2}if(agg==='min')return Math.min(...nums);if(agg==='max')return Math.max(...nums);if(agg==='range')return Math.max(...nums)-Math.min(...nums);return 0}
 function openFullscreen(id){const page=activePage();const w=page?.widgets?.find(x=>x.id===id);if(!w)return;$('modalTitle').textContent=w.title||'Widget';$('modal').classList.remove('hidden');$('modalBody').innerHTML=`<div id="modal_widget_body" style="height:100%;min-height:480px"></div>`;renderWidgetBody(w,'modal_widget_body')}
-function goPage(delta){const pages=project?.pages||[];if(!pages.length)return;let i=pages.findIndex(p=>p.id===activePageId);if(i<0)i=0;i=(i+delta+pages.length)%pages.length;activePageId=pages[i].id;renderAll();}
+function goPage(delta){const pages=project?.pages||[];if(!pages.length)return;let i=pages.findIndex(p=>p.id===activePageId);if(i<0)i=0;const next=Math.max(0,Math.min(pages.length-1,i+delta));if(next===i)return;activePageId=pages[next].id;renderAll();window.scrollTo({top:0,behavior:'smooth'});}
 function toggleFilterDrawer(open){const panel=$('filterPanel'),back=$('filterBackdrop');if(!panel||!back)return;const should=open==null?!panel.classList.contains('open'):open;panel.classList.toggle('open',should);back.classList.toggle('hidden',!should)}
 function togglePresentation(force){const on=force==null?!document.body.classList.contains('presentation'):force;document.body.classList.toggle('presentation',on);$('presentationBar')?.classList.toggle('hidden',!on);if(on&&document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}if(!on&&document.fullscreenElement){document.exitFullscreen().catch(()=>{});}toast(on?'Presentation mode':'Presentation ended')}
 function openShare(){const url=location.href;const qr='https://api.qrserver.com/v1/create-qr-code/?size=260x260&data='+encodeURIComponent(url);$('modalTitle').textContent='Share viewer';$('modal').classList.remove('hidden');document.querySelector('.modal-card')?.classList.add('share-card');$('modalBody').innerHTML=`<div class="share-grid"><div><label>Viewer link</label><input id="shareUrl" value="${escapeHtml(url)}" readonly></div><button id="copyShareBtn" class="primary">Copy Link</button></div><p class="hint">For a hosted project, use a URL like <code>/databench/viewer/?project=../projects/example.databench.json</code>. Standalone exports can be shared as the HTML file itself.</p><div class="qr-box"><img alt="QR code for viewer link" src="${qr}"></div><p class="hint">QR image uses a public QR service and needs internet access.</p>`;setTimeout(()=>{$('copyShareBtn')?.addEventListener('click',()=>{navigator.clipboard?.writeText($('shareUrl').value);toast('Viewer link copied')})},0)}
 function loadLocalPreview(){try{const raw=localStorage.getItem('databench.viewer.preview');if(!raw)return false;loadProject(JSON.parse(raw));toast('Preview loaded from editor');return true}catch(err){console.error(err);toast('Could not load editor preview');return false}}
 
-$('projectFile').addEventListener('change',e=>{if(e.target.files[0])readFile(e.target.files[0])});$('projectFileBig').addEventListener('change',e=>{if(e.target.files[0])readFile(e.target.files[0])});$('pageTabs').addEventListener('click',e=>{const id=e.target.closest('[data-page]')?.dataset.page;if(id){activePageId=id;renderAll()}});$('pageSelect').addEventListener('change',e=>{activePageId=e.target.value;renderAll()});$('filterSource').addEventListener('change',renderFilters);$('filterField').addEventListener('change',renderFilterValueOptions);$('addFilterBtn').addEventListener('click',()=>{const p=activePage();if(!p)return;const field=$('filterField').value,value=$('filterValue').value;if(!field)return toast('Choose a field');if(value===''&&!uniqueValuesFor($('filterSource').value,field,1).includes(''))return toast('Choose a value');p.filters=p.filters||[];p.filters.push({id:'vf_'+Math.random().toString(36).slice(2),sourceId:$('filterSource').value,field,op:'equals',value,value2:''});$('filterValue').value='';toggleFilterDrawer(false);renderAll()});$('filterChips').addEventListener('click',e=>{const id=e.target.closest('[data-remove-filter]')?.dataset.removeFilter;if(!id)return;const p=activePage();p.filters=(p.filters||[]).filter(f=>f.id!==id);renderAll()});document.addEventListener('input',e=>{const key=e.target.dataset?.tableSearch;if(!key)return;tableViewState[key]=tableViewState[key]||{search:'',sortCol:'',sortDir:'asc',page:0,pageSize:50};tableViewState[key].search=e.target.value;tableViewState[key].page=0;renderCanvas()});document.addEventListener('click',e=>{const pageKey=e.target.dataset?.tablePage;if(pageKey){tableViewState[pageKey]=tableViewState[pageKey]||{search:'',sortCol:'',sortDir:'asc',page:0,pageSize:50};tableViewState[pageKey].page+=Number(e.target.dataset.delta||0);renderCanvas()}const sortKey=e.target.dataset?.tableSort;if(sortKey){const col=e.target.dataset.col;const v=tableViewState[sortKey]||(tableViewState[sortKey]={search:'',sortCol:'',sortDir:'asc',page:0,pageSize:50});if(v.sortCol===col)v.sortDir=v.sortDir==='asc'?'desc':'asc';else{v.sortCol=col;v.sortDir='asc'}v.page=0;renderCanvas()}});$('resetFiltersBtn').addEventListener('click',()=>{(project?.pages||[]).forEach(p=>p.filters=[]);renderAll();toast('Filters reset')});$('canvas').addEventListener('click',e=>{const id=e.target.closest('[data-fullscreen]')?.dataset.fullscreen;if(id)openFullscreen(id)});$('closeModal').addEventListener('click',()=>{$('modal').classList.add('hidden');document.querySelector('.modal-card')?.classList.remove('share-card')});$('modal').addEventListener('click',e=>{if(e.target.id==='modal'){$('modal').classList.add('hidden');document.querySelector('.modal-card')?.classList.remove('share-card')}});document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.add('hidden')});
-$('filterToggleBtn')?.addEventListener('click',()=>toggleFilterDrawer());$('filterBackdrop')?.addEventListener('click',()=>toggleFilterDrawer(false));$('presentBtn')?.addEventListener('click',()=>togglePresentation());$('exitPresentBtn')?.addEventListener('click',()=>togglePresentation(false));$('presentPrevBtn')?.addEventListener('click',()=>goPage(-1));$('presentNextBtn')?.addEventListener('click',()=>goPage(1));$('shareBtn')?.addEventListener('click',openShare);let touchStartX=0,touchStartY=0;$('canvas')?.addEventListener('touchstart',e=>{const t=e.changedTouches[0];touchStartX=t.clientX;touchStartY=t.clientY},{passive:true});$('canvas')?.addEventListener('touchend',e=>{const t=e.changedTouches[0];const dx=t.clientX-touchStartX,dy=t.clientY-touchStartY;if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.5)goPage(dx<0?1:-1)},{passive:true});document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&document.body.classList.contains('presentation'))togglePresentation(false)});
+$('projectFile').addEventListener('change',e=>{if(e.target.files[0])readFile(e.target.files[0])});$('projectFileBig').addEventListener('change',e=>{if(e.target.files[0])readFile(e.target.files[0])});$('pageTabs').addEventListener('click',e=>{const id=e.target.closest('[data-page]')?.dataset.page;if(id){activePageId=id;renderAll();window.scrollTo({top:0,behavior:'smooth'})}});$('pageSelect').addEventListener('change',e=>{activePageId=e.target.value;renderAll();window.scrollTo({top:0,behavior:'smooth'})});$('mobilePageSelect')?.addEventListener('change',e=>{activePageId=e.target.value;renderAll();window.scrollTo({top:0,behavior:'smooth'})});$('prevPageBtn')?.addEventListener('click',()=>goPage(-1));$('nextPageBtn')?.addEventListener('click',()=>goPage(1));$('mobilePrevPageBtn')?.addEventListener('click',()=>goPage(-1));$('mobileNextPageBtn')?.addEventListener('click',()=>goPage(1));$('filterSource').addEventListener('change',renderFilters);$('filterField').addEventListener('change',renderFilterValueOptions);$('addFilterBtn').addEventListener('click',()=>{const p=activePage();if(!p)return;const field=$('filterField').value,value=$('filterValue').value;if(!field)return toast('Choose a field');if(value===''&&!uniqueValuesFor($('filterSource').value,field,1).includes(''))return toast('Choose a value');p.filters=p.filters||[];p.filters.push({id:'vf_'+Math.random().toString(36).slice(2),sourceId:$('filterSource').value,field,op:'equals',value,value2:''});$('filterValue').value='';toggleFilterDrawer(false);renderAll()});$('filterChips').addEventListener('click',e=>{const id=e.target.closest('[data-remove-filter]')?.dataset.removeFilter;if(!id)return;const p=activePage();p.filters=(p.filters||[]).filter(f=>f.id!==id);renderAll()});document.addEventListener('input',e=>{const key=e.target.dataset?.tableSearch;if(!key)return;tableViewState[key]=tableViewState[key]||{search:'',sortCol:'',sortDir:'asc',page:0,pageSize:50};tableViewState[key].search=e.target.value;tableViewState[key].page=0;renderCanvas()});document.addEventListener('click',e=>{const pageKey=e.target.dataset?.tablePage;if(pageKey){tableViewState[pageKey]=tableViewState[pageKey]||{search:'',sortCol:'',sortDir:'asc',page:0,pageSize:50};tableViewState[pageKey].page+=Number(e.target.dataset.delta||0);renderCanvas()}const sortKey=e.target.dataset?.tableSort;if(sortKey){const col=e.target.dataset.col;const v=tableViewState[sortKey]||(tableViewState[sortKey]={search:'',sortCol:'',sortDir:'asc',page:0,pageSize:50});if(v.sortCol===col)v.sortDir=v.sortDir==='asc'?'desc':'asc';else{v.sortCol=col;v.sortDir='asc'}v.page=0;renderCanvas()}});$('resetFiltersBtn').addEventListener('click',()=>{(project?.pages||[]).forEach(p=>p.filters=[]);renderAll();toast('Filters reset')});$('canvas').addEventListener('click',e=>{const id=e.target.closest('[data-fullscreen]')?.dataset.fullscreen;if(id)openFullscreen(id)});$('closeModal').addEventListener('click',()=>{$('modal').classList.add('hidden');document.querySelector('.modal-card')?.classList.remove('share-card')});$('modal').addEventListener('click',e=>{if(e.target.id==='modal'){$('modal').classList.add('hidden');document.querySelector('.modal-card')?.classList.remove('share-card')}});document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.add('hidden')});
+$('filterToggleBtn')?.addEventListener('click',()=>toggleFilterDrawer());$('filterBackdrop')?.addEventListener('click',()=>toggleFilterDrawer(false));$('presentBtn')?.addEventListener('click',()=>togglePresentation());$('exitPresentBtn')?.addEventListener('click',()=>togglePresentation(false));$('presentPrevBtn')?.addEventListener('click',()=>goPage(-1));$('presentNextBtn')?.addEventListener('click',()=>goPage(1));$('shareBtn')?.addEventListener('click',openShare);document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&document.body.classList.contains('presentation'))togglePresentation(false)});
 async function loadProjectFromUrlParam(){const params=new URLSearchParams(location.search);if(params.get('source')==='local'||params.get('project')==='local'){return loadLocalPreview()}const url=params.get('project')||params.get('src');if(!url)return false;try{const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);loadProject(await res.json());toast('Project loaded from link');return true}catch(err){console.error(err);toast('Could not load project link');return false}}
 async function loadDefaultHostedProject(){const url=window.DATABENCH_DEFAULT_PROJECT_URL;if(!url)return false;try{const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);loadProject(await res.json());toast('Hosted project loaded');return true}catch(err){console.error(err);toast('Could not load hosted project');return false}}
 (async function initViewer(){try{const b64=window.DATABENCH_EMBEDDED_B64;if(b64&&b64!=='__DATABENCH_PROJECT_B64__'){loadProject(JSON.parse(decodeB64Unicode(b64)));return}}catch(err){console.error(err);toast('Could not load embedded project')}const loadedFromParam=await loadProjectFromUrlParam();if(!loadedFromParam)await loadDefaultHostedProject();})();
@@ -1011,7 +1028,7 @@ async function loadDefaultHostedProject(){const url=window.DATABENCH_DEFAULT_PRO
 </template>
 
 <script>
-const APP_VERSION = '2.0.5';
+const APP_VERSION = '2.0.8';
 const PROJECT_SCHEMA_VERSION = 8;
 const WIDGET_REGISTRY_VERSION = 1;
 const AUTOSAVE_KEY = 'databench_autosave_current';
@@ -1697,8 +1714,8 @@ function syncRenderedWidgetGeometry(options={}) {
     const next = {
       x: Math.round(parseFloat(el.style.left) || Number(w.x || 0)),
       y: Math.round(parseFloat(el.style.top) || Number(w.y || 0)),
-      w: Math.round(el.offsetWidth || Number(w.w || 0)),
-      h: Math.round(el.offsetHeight || Number(w.h || 0))
+      w: Math.round(parseFloat(el.style.width) || el.offsetWidth || Number(w.w || 0)),
+      h: Math.round(parseFloat(el.style.height) || el.offsetHeight || Number(w.h || 0))
     };
     if (Math.abs(Number(w.x || 0) - next.x) > 1) { w.x = next.x; changed = true; }
     if (Math.abs(Number(w.y || 0) - next.y) > 1) { w.y = next.y; changed = true; }
@@ -1763,8 +1780,9 @@ function renderWidget(w) {
   el.dataset.widget = w.id;
   el.style.left = `${w.x}px`; el.style.top = `${w.y}px`; el.style.width = `${w.w}px`; el.style.height = `${w.h}px`;
   el.style.background = w.bg || state.theme.card; el.style.color = w.text || '#0f172a';
-  el.innerHTML = `<div class="widget-head"><strong>${escapeHtml(w.title)}</strong><button class="small" data-edit-widget="${w.id}" title="Open widget settings">Edit</button></div><div class="widget-body" id="body_${w.id}"></div>`;
+  el.innerHTML = `<div class="widget-head"><strong>${escapeHtml(w.title)}</strong><button class="small" data-edit-widget="${w.id}" title="Open widget settings">Edit</button></div><div class="widget-body" id="body_${w.id}"></div><div class="widget-resize-handle" data-resize-widget="${w.id}" title="Resize widget"></div>`;
   makeDraggable(el, w);
+  makeResizable(el, w);
   el.addEventListener('pointerdown', e => {
     if (!el.classList.contains('dragging')) selectWidget(w.id, false);
       queueAutosave();
@@ -1775,18 +1793,12 @@ function renderWidget(w) {
     selectWidget(w.id, false);
     showWidgetContextMenu(e.clientX, e.clientY, w.id);
   });
-  new ResizeObserver(entries => {
-    const r = entries[0].target;
-    const nextW = Math.round(r.offsetWidth || entries[0].contentRect.width);
-    const nextH = Math.round(r.offsetHeight || entries[0].contentRect.height);
-    if (Math.abs(Number(w.w||0)-nextW)>2 || Math.abs(Number(w.h||0)-nextH)>2) {
-      w.w=Math.max(260,nextW);
-      w.h=Math.max(170,nextH);
-      renderInspector();
-      renderWidgetContents(w);
-      queueAutosave();
-    }
-  }).observe(el);
+  // Do not attach a ResizeObserver here. Older builds used one to infer widget
+  // dimensions from the DOM, but it could fire after a page re-render removed the
+  // element from the document. Detached widgets report 0px dimensions, which then
+  // collapsed saved table/chart sizes when switching away and back. Resizing is
+  // now committed directly by makeResizable(), inspector fields, and explicit
+  // geometry sync points.
   return el;
 }
 function renderWidgetContents(w) {
@@ -1800,6 +1812,7 @@ function renderWidgetContents(w) {
   if (w.type === 'summary') return renderSummary(body, w.sourceId, rows, baseRows.length);
   if (w.type === 'pivot') return renderPivotTable(body, w, rows, baseRows.length);
   if (w.type === 'kpi') return renderKpi(body, w, rows);
+  if (charts.has(w.id)) { charts.get(w.id)?.destroy(); charts.delete(w.id); }
   body.innerHTML = `<canvas id="chart_${w.id}"></canvas>`;
   const data = aggregate(rows, w);
   const ctx = $(`chart_${w.id}`);
@@ -2051,6 +2064,48 @@ function renderFields() {
   const fields = src?.fields || [];
   $('fieldList').innerHTML = fields.length ? fields.map(f => `<span class="pill">${escapeHtml(f.name)} <span class="field-type">${escapeHtml(f.type)} · ${escapeHtml(f.role)}${f.calculated ? ' · calc' : ''}${f.possibleKey ? ' · key?' : ''}</span></span>`).join('') : 'No data loaded yet.';
 }
+
+function makeResizable(el, w) {
+  const handle = el.querySelector('.widget-resize-handle');
+  if (!handle) return;
+  let start = null;
+  const onMove = e => {
+    if (!start) return;
+    e.preventDefault();
+    const rawW = start.w + (e.clientX - start.mx);
+    const rawH = start.h + (e.clientY - start.my);
+    w.w = Math.max(260, maybeSnap(rawW));
+    w.h = Math.max(170, maybeSnap(rawH));
+    el.style.width = `${w.w}px`;
+    el.style.height = `${w.h}px`;
+    if ($('wW')) $('wW').value = w.w;
+    if ($('wH')) $('wH').value = w.h;
+    renderWidgetContents(w);
+  };
+  const onUp = e => {
+    if (!start) return;
+    handle.releasePointerCapture?.(start.pointerId);
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    el.classList.remove('resizing');
+    document.body.style.userSelect = '';
+    start = null;
+    queueAutosave();
+    commitHistory();
+  };
+  handle.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    selectWidget(w.id, false);
+    start = { pointerId:e.pointerId, mx:e.clientX, my:e.clientY, w:Number(w.w || el.offsetWidth || 360), h:Number(w.h || el.offsetHeight || 240) };
+    handle.setPointerCapture?.(e.pointerId);
+    el.classList.add('resizing');
+    document.body.style.userSelect='none';
+    window.addEventListener('pointermove', onMove, { passive:false });
+    window.addEventListener('pointerup', onUp);
+  });
+}
+
 function makeDraggable(el, w) {
   const head = el.querySelector('.widget-head');
   let start = null;
@@ -2273,7 +2328,7 @@ async function exportStaticSitePackage() {
   let viewerHtml;
   try { viewerHtml = viewerHtmlFromTemplate({ project:null, defaultProjectUrl:'project.databench.json', embedded:false }); }
   catch(err) { console.error(err); return toast('Viewer template is missing.'); }
-  viewerHtml = viewerHtml.replace('<title>DataBench Viewer v2.0.5</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
+  viewerHtml = viewerHtml.replace('<title>DataBench Viewer v2.0.8</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
   const manifest = JSON.stringify({ appName:'DataBench', appVersion:APP_VERSION, schemaVersion:PROJECT_SCHEMA_VERSION, projectName:project.projectName || 'Untitled DataBench Project', generatedAt:new Date().toISOString(), files:['index.html','project.databench.json','databench.manifest.json','README.txt'], viewer:{defaultProjectUrl:'project.databench.json'} }, null, 2);
   const readme = `DataBench static viewer package\n\nOpen index.html from a static web server, or upload this folder to GitHub Pages, Netlify, Cloudflare Pages, or your web host.\n\nFiles:\n- index.html: mobile-friendly DataBench Viewer\n- project.databench.json: dashboard project and embedded source data\n\nHosted URL pattern:\n/databench/viewer/?project=../projects/example.databench.json\n\nGenerated: ${new Date().toISOString()}\nProject: ${project.projectName || 'Untitled DataBench Project'}\n`;
   const baseName = safeFileName(project.projectName || 'databench');
@@ -2337,7 +2392,7 @@ function exportMobileViewerHtml() {
   let html;
   try { html = viewerHtmlFromTemplate({ project, embedded:true }); }
   catch(err) { console.error(err); return toast('Mobile viewer template is missing.'); }
-  html = html.replace('<title>DataBench Viewer v2.0.5</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
+  html = html.replace('<title>DataBench Viewer v2.0.8</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
   downloadText(`${safeFileName(project.projectName || 'databench')}.databench.viewer.html`, html, 'text/html');
   toast('Mobile viewer HTML exported.');
 }
