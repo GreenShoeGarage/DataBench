@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DataBench v2.0.8</title>
+  <title>DataBench v2.0.9</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -557,6 +557,24 @@
     .command-item:hover,.command-item.active { background:var(--panel-2); filter:none; }
     .command-item span { color:var(--muted); font-size:.78rem; }
     .help-strip { margin-top:1rem; padding:.85rem; border-radius:18px; background:rgba(255,255,255,.04); border:1px solid var(--border); color:var(--muted); }
+
+    .sheet-modal { position:fixed; inset:0; z-index:95; display:flex; align-items:center; justify-content:center; padding:1rem; background:rgba(2,6,23,.72); backdrop-filter:blur(14px); }
+    .sheet-card { width:min(760px,96vw); max-height:88vh; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:24px; box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column; }
+    .sheet-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; padding:1rem 1.1rem; border-bottom:1px solid var(--border); }
+    .sheet-card-head h2 { margin:0; font-size:1.15rem; }
+    .sheet-card-head p { margin:.25rem 0 0; color:var(--muted); font-size:.9rem; }
+    .sheet-list { padding:1rem; overflow:auto; display:grid; gap:.65rem; }
+    .sheet-option { display:grid; grid-template-columns:auto minmax(0,1fr); gap:.75rem; align-items:start; padding:.8rem; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.045); cursor:pointer; }
+    .sheet-option:hover { border-color:var(--accent); }
+    .sheet-option input { width:18px; height:18px; margin-top:.15rem; }
+    .sheet-option strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .sheet-meta { display:flex; gap:.45rem; flex-wrap:wrap; margin-top:.35rem; color:var(--muted); font-size:.8rem; }
+    .sheet-meta span { border:1px solid var(--border); border-radius:999px; padding:.18rem .45rem; background:rgba(255,255,255,.04); }
+    .sheet-preview { margin-top:.45rem; color:var(--muted); font-size:.78rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .sheet-card-foot { display:flex; justify-content:space-between; align-items:center; gap:.75rem; flex-wrap:wrap; padding:1rem 1.1rem; border-top:1px solid var(--border); }
+    .sheet-card-foot .left-actions, .sheet-card-foot .right-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+    @media (max-width:760px){ .sheet-card-foot { align-items:stretch; } .sheet-card-foot .left-actions, .sheet-card-foot .right-actions { width:100%; display:grid; grid-template-columns:1fr 1fr; } .sheet-card-foot button { width:100%; } }
+
     @media (max-width: 760px) { .start-grid { grid-template-columns:1fr; } .start-top { flex-direction:column; } }
 
   </style>
@@ -567,7 +585,7 @@
       <div class="brand">
         <div class="logo"></div>
         <div>
-          <h1>DataBench <span class="version">v2.0.8</span></h1>
+          <h1>DataBench <span class="version">v2.0.9</span></h1>
           <p>Quick and dirty data visualization, analysis, themes, pivot tables, PDF/PPT exports, templates, calculated fields, relationships, filters, autosave, and JSON projects.</p>
         </div>
       </div>
@@ -607,7 +625,7 @@
       <div class="section">
         <h2>Data Sources</h2>
         <label>Upload CSV or XLSX</label>
-        <input id="fileInput" type="file" accept=".csv,.xlsx,.xls" multiple>
+        <input id="fileInput" type="file" accept=".csv,.xlsx,.xls,.xlsm" multiple>
         <label>Google Sheets published CSV URL</label>
         <input id="sheetUrl" placeholder="Paste published CSV link">
         <button id="loadSheetBtn" style="margin-top:.55rem; width:100%;">Grab Sheet CSV</button>
@@ -897,6 +915,29 @@
   </div>
 
   <div id="widgetContextMenu" class="widget-context-menu" role="menu" aria-hidden="true"></div>
+
+  <div id="sheetImportModal" class="sheet-modal hidden" role="dialog" aria-modal="true" aria-labelledby="sheetImportTitle">
+    <div class="sheet-card">
+      <div class="sheet-card-head">
+        <div>
+          <h2 id="sheetImportTitle">Choose workbook sheets to import</h2>
+          <p id="sheetImportSubtitle">Select one or more tabs. DataBench will create a separate data table for each selected sheet.</p>
+        </div>
+        <button id="cancelSheetImportBtn" type="button">Cancel</button>
+      </div>
+      <div id="sheetImportList" class="sheet-list"></div>
+      <div class="sheet-card-foot">
+        <div class="left-actions">
+          <button id="selectAllSheetsBtn" type="button">Select All</button>
+          <button id="selectDataSheetsBtn" type="button">Data Sheets</button>
+        </div>
+        <div class="right-actions">
+          <button id="confirmSheetImportBtn" class="primary" type="button">Import Selected</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
   <div id="healthModal" class="health-modal hidden"><div class="health-card"><div style="display:flex;align-items:center;justify-content:space-between;gap:1rem"><h2 id="healthModalTitle">Project Health Check</h2><button id="closeHealthModalBtn">Close</button></div><div id="healthReport"></div></div></div>
   <template id="databenchViewerTemplate">
@@ -905,7 +946,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DataBench Viewer v2.0.8</title>
+  <title>DataBench Viewer v2.0.9</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <style>
     :root{--bg:#0f172a;--panel:#111827;--panel2:#1f2937;--text:#e5e7eb;--muted:#94a3b8;--accent:#38bdf8;--accent2:#a78bfa;--on-accent:#07111f;--ok:#34d399;--danger:#fb7185;--border:rgba(255,255,255,.14);--canvas:#f8fafc;--card:#fff;--cardText:#0f172a;--grid:#e2e8f0;--shadow:0 16px 40px rgba(0,0,0,.24);--radius:18px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -935,7 +976,7 @@
 <script>
 window.DATABENCH_EMBEDDED_B64 = "__DATABENCH_PROJECT_B64__";
 window.DATABENCH_DEFAULT_PROJECT_URL = "";
-let project=null, activePageId=null, charts=new Map();const tableViewState={};const VIEWER_APP_VERSION='2.0.8';const PROJECT_SCHEMA_VERSION=8;const WIDGET_REGISTRY_VERSION=1;const WIDGET_REGISTRY={table:1,summary:1,pivot:1,kpi:1,bar:1,horizontalBar:1,line:1,pie:1,donut:1,scatter:1,text:1};function normalizeViewerWidget(w){if(!w||!w.type)return w;if(!WIDGET_REGISTRY[w.type]){w.unsupported=true;return w;}w.filters=w.filters||[];w.registryVersion=w.registryVersion||WIDGET_REGISTRY_VERSION;if(w.w==null)w.w=420;if(w.h==null)w.h=300;if(w.x==null)w.x=24;if(w.y==null)w.y=80;if(w.type==='text'&&w.content==null)w.content=w.title||'';return w;}function migrateViewerProject(p){if(!p||typeof p!=='object')p={};const from=Number(p.schemaVersion||1);p.projectType=p.projectType||'databench-project';p.schemaVersion=PROJECT_SCHEMA_VERSION;p.viewer=Object.assign({defaultMode:'responsive',allowFilters:true,mobileLayout:'stacked',pageNavigation:'tabs',schemaVersion:PROJECT_SCHEMA_VERSION},p.viewer||{});p.architecture=Object.assign({engine:'DataBench viewer runtime',widgetRegistryVersion:WIDGET_REGISTRY_VERSION,schemaVersion:PROJECT_SCHEMA_VERSION},p.architecture||{});p.migrations=Array.isArray(p.migrations)?p.migrations:[];if(from<PROJECT_SCHEMA_VERSION)p.migrations.push({fromSchema:from,toSchema:PROJECT_SCHEMA_VERSION,appVersion:VIEWER_APP_VERSION,at:new Date().toISOString()});(p.pages||[]).forEach(pg=>(pg.widgets||[]).forEach(normalizeViewerWidget));return p;}
+let project=null, activePageId=null, charts=new Map();const tableViewState={};const VIEWER_APP_VERSION='2.0.9';const PROJECT_SCHEMA_VERSION=8;const WIDGET_REGISTRY_VERSION=1;const WIDGET_REGISTRY={table:1,summary:1,pivot:1,kpi:1,bar:1,horizontalBar:1,line:1,pie:1,donut:1,scatter:1,text:1};function normalizeViewerWidget(w){if(!w||!w.type)return w;if(!WIDGET_REGISTRY[w.type]){w.unsupported=true;return w;}w.filters=w.filters||[];w.registryVersion=w.registryVersion||WIDGET_REGISTRY_VERSION;if(w.w==null)w.w=420;if(w.h==null)w.h=300;if(w.x==null)w.x=24;if(w.y==null)w.y=80;if(w.type==='text'&&w.content==null)w.content=w.title||'';return w;}function migrateViewerProject(p){if(!p||typeof p!=='object')p={};const from=Number(p.schemaVersion||1);p.projectType=p.projectType||'databench-project';p.schemaVersion=PROJECT_SCHEMA_VERSION;p.viewer=Object.assign({defaultMode:'responsive',allowFilters:true,mobileLayout:'stacked',pageNavigation:'tabs',schemaVersion:PROJECT_SCHEMA_VERSION},p.viewer||{});p.architecture=Object.assign({engine:'DataBench viewer runtime',widgetRegistryVersion:WIDGET_REGISTRY_VERSION,schemaVersion:PROJECT_SCHEMA_VERSION},p.architecture||{});p.migrations=Array.isArray(p.migrations)?p.migrations:[];if(from<PROJECT_SCHEMA_VERSION)p.migrations.push({fromSchema:from,toSchema:PROJECT_SCHEMA_VERSION,appVersion:VIEWER_APP_VERSION,at:new Date().toISOString()});(p.pages||[]).forEach(pg=>(pg.widgets||[]).forEach(normalizeViewerWidget));return p;}
 const $=id=>document.getElementById(id);
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -1028,7 +1069,7 @@ async function loadDefaultHostedProject(){const url=window.DATABENCH_DEFAULT_PRO
 </template>
 
 <script>
-const APP_VERSION = '2.0.8';
+const APP_VERSION = '2.0.9';
 const PROJECT_SCHEMA_VERSION = 8;
 const WIDGET_REGISTRY_VERSION = 1;
 const AUTOSAVE_KEY = 'databench_autosave_current';
@@ -1221,26 +1262,122 @@ function parseCSV(text) {
   const sheet = wb.Sheets[wb.SheetNames[0]];
   return XLSX.utils.sheet_to_json(sheet, { defval: '', blankrows: false });
 }
+function readWorkbookFromArrayBuffer(buffer) {
+  const XLSXLib = requireXlsxParser();
+  try {
+    return XLSXLib.read(new Uint8Array(buffer), { type: 'array', cellDates: false });
+  } catch (err) {
+    return XLSXLib.read(buffer, { type: 'array', cellDates: false });
+  }
+}
+function workbookSheetInfo(wb) {
+  const XLSXLib = requireXlsxParser();
+  return (wb.SheetNames || []).map(name => {
+    const raw = XLSXLib.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '', blankrows: false });
+    const nonEmptyRows = raw.filter(row => (row || []).some(v => String(v ?? '').trim() !== ''));
+    const header = nonEmptyRows[0] || [];
+    const colCount = Math.max(0, ...nonEmptyRows.map(r => (r || []).length));
+    const dataRowCount = Math.max(0, nonEmptyRows.length - (header.length ? 1 : 0));
+    const hasData = dataRowCount > 0 && header.some(v => String(v ?? '').trim() !== '');
+    const preview = header.slice(0, 8).map(v => String(v ?? '').trim()).filter(Boolean).join(', ');
+    return { name, rowCount: dataRowCount, colCount, hasData, preview };
+  });
+}
+function rowsFromWorkbookSheet(wb, sheetName) {
+  const XLSXLib = requireXlsxParser();
+  const rows = XLSXLib.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '', blankrows: false });
+  return rows;
+}
+function baseFileName(name) {
+  return String(name || 'Workbook').replace(/\.(xlsx|xlsm|xls|csv)$/i, '');
+}
+function uniqueSourceName(name) {
+  let out = name, i = 2;
+  const taken = new Set((state.sources || []).map(s => s.name));
+  while (taken.has(out)) out = `${name} ${i++}`;
+  return out;
+}
+function selectWorkbookSheets(fileName, infos) {
+  const modal = $('sheetImportModal');
+  const list = $('sheetImportList');
+  const subtitle = $('sheetImportSubtitle');
+  if (!modal || !list) {
+    return Promise.resolve(infos.filter(i => i.hasData).map(i => i.name));
+  }
+  subtitle.textContent = `${fileName}: select one or more workbook tabs. Each selected tab becomes its own DataBench source, table page, and summary page.`;
+  list.innerHTML = infos.map((info, idx) => `
+    <label class="sheet-option ${info.hasData ? '' : 'muted'}">
+      <input type="checkbox" value="${escapeHtml(info.name)}" ${info.hasData ? 'checked' : ''} ${info.hasData ? '' : 'disabled'}>
+      <span>
+        <strong>${escapeHtml(info.name)}</strong>
+        <span class="sheet-meta"><span>${formatNumber(info.rowCount)} data rows</span><span>${formatNumber(info.colCount)} columns</span>${info.hasData ? '<span>ready</span>' : '<span>empty / no header</span>'}</span>
+        <span class="sheet-preview">${info.preview ? 'Columns: ' + escapeHtml(info.preview) : 'No column preview available.'}</span>
+      </span>
+    </label>`).join('');
+  modal.classList.remove('hidden');
+  return new Promise(resolve => {
+    const cleanup = () => {
+      modal.classList.add('hidden');
+      $('confirmSheetImportBtn')?.removeEventListener('click', confirm);
+      $('cancelSheetImportBtn')?.removeEventListener('click', cancel);
+      $('selectAllSheetsBtn')?.removeEventListener('click', selectAll);
+      $('selectDataSheetsBtn')?.removeEventListener('click', selectData);
+      modal.removeEventListener('click', outside);
+      document.removeEventListener('keydown', esc);
+    };
+    const checked = () => Array.from(list.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+    const confirm = () => {
+      const selected = checked();
+      if (!selected.length) return toast('Select at least one workbook tab to import.');
+      cleanup(); resolve(selected);
+    };
+    const cancel = () => { cleanup(); resolve([]); };
+    const selectAll = () => list.querySelectorAll('input[type="checkbox"]:not(:disabled)').forEach(cb => cb.checked = true);
+    const selectData = () => list.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = !cb.disabled);
+    const outside = e => { if (e.target === modal) cancel(); };
+    const esc = e => { if (e.key === 'Escape') cancel(); };
+    $('confirmSheetImportBtn')?.addEventListener('click', confirm);
+    $('cancelSheetImportBtn')?.addEventListener('click', cancel);
+    $('selectAllSheetsBtn')?.addEventListener('click', selectAll);
+    $('selectDataSheetsBtn')?.addEventListener('click', selectData);
+    modal.addEventListener('click', outside);
+    document.addEventListener('keydown', esc);
+  });
+}
+async function importDataFile(file) {
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (ext === 'csv') {
+    addSource(file.name, parseCSV(await file.text()), 'upload');
+    toast(`Loaded ${file.name}`);
+    return;
+  }
+  if (!['xlsx', 'xls', 'xlsm'].includes(ext)) throw new Error('Unsupported file type. Use CSV, XLSX, XLS, XLSM, or DataBench project JSON.');
+  const wb = readWorkbookFromArrayBuffer(await file.arrayBuffer());
+  if (!wb.SheetNames || !wb.SheetNames.length) throw new Error('No worksheets were found in this Excel file.');
+  const infos = workbookSheetInfo(wb);
+  const selected = await selectWorkbookSheets(file.name, infos);
+  if (!selected.length) { toast('Workbook import cancelled.'); return; }
+  let imported = 0;
+  const base = baseFileName(file.name);
+  for (const sheetName of selected) {
+    const rows = rowsFromWorkbookSheet(wb, sheetName);
+    if (!rows.length) continue;
+    addSource(uniqueSourceName(`${base} — ${sheetName}`), rows, 'upload');
+    imported++;
+  }
+  if (!imported) throw new Error('The selected worksheet tabs did not contain usable data rows.');
+  toast(`Imported ${imported} worksheet${imported === 1 ? '' : 's'} from ${file.name}.`);
+}
 async function parseFile(file) {
   const ext = (file.name.split('.').pop() || '').toLowerCase();
   if (ext === 'csv') return parseCSV(await file.text());
   if (!['xlsx', 'xls', 'xlsm'].includes(ext)) throw new Error('Unsupported file type. Use CSV, XLSX, XLS, or DataBench project JSON.');
-  const XLSXLib = requireXlsxParser();
-  const buffer = await file.arrayBuffer();
-  let wb;
-  try {
-    wb = XLSXLib.read(new Uint8Array(buffer), { type: 'array', cellDates: false });
-  } catch (err) {
-    wb = XLSXLib.read(buffer, { type: 'array', cellDates: false });
-  }
-  if (!wb.SheetNames || !wb.SheetNames.length) throw new Error('No worksheets were found in this Excel file.');
-  let sheetName = wb.SheetNames[0];
-  for (const name of wb.SheetNames) {
-    const preview = XLSXLib.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '', blankrows: false });
-    if (preview.length > 1 && (preview[0] || []).some(v => String(v).trim() !== '')) { sheetName = name; break; }
-  }
-  const rows = XLSXLib.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '', blankrows: false });
-  if (!rows.length) throw new Error(`Worksheet "${sheetName}" did not contain any data rows.`);
+  const wb = readWorkbookFromArrayBuffer(await file.arrayBuffer());
+  const infos = workbookSheetInfo(wb);
+  const first = infos.find(i => i.hasData) || infos[0];
+  if (!first) throw new Error('No worksheets were found in this Excel file.');
+  const rows = rowsFromWorkbookSheet(wb, first.name);
+  if (!rows.length) throw new Error(`Worksheet "${first.name}" did not contain any data rows.`);
   return rows;
 }
 function addSource(name, rows, kind='upload') {
@@ -2328,7 +2465,7 @@ async function exportStaticSitePackage() {
   let viewerHtml;
   try { viewerHtml = viewerHtmlFromTemplate({ project:null, defaultProjectUrl:'project.databench.json', embedded:false }); }
   catch(err) { console.error(err); return toast('Viewer template is missing.'); }
-  viewerHtml = viewerHtml.replace('<title>DataBench Viewer v2.0.8</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
+  viewerHtml = viewerHtml.replace('<title>DataBench Viewer v2.0.9</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
   const manifest = JSON.stringify({ appName:'DataBench', appVersion:APP_VERSION, schemaVersion:PROJECT_SCHEMA_VERSION, projectName:project.projectName || 'Untitled DataBench Project', generatedAt:new Date().toISOString(), files:['index.html','project.databench.json','databench.manifest.json','README.txt'], viewer:{defaultProjectUrl:'project.databench.json'} }, null, 2);
   const readme = `DataBench static viewer package\n\nOpen index.html from a static web server, or upload this folder to GitHub Pages, Netlify, Cloudflare Pages, or your web host.\n\nFiles:\n- index.html: mobile-friendly DataBench Viewer\n- project.databench.json: dashboard project and embedded source data\n\nHosted URL pattern:\n/databench/viewer/?project=../projects/example.databench.json\n\nGenerated: ${new Date().toISOString()}\nProject: ${project.projectName || 'Untitled DataBench Project'}\n`;
   const baseName = safeFileName(project.projectName || 'databench');
@@ -2392,7 +2529,7 @@ function exportMobileViewerHtml() {
   let html;
   try { html = viewerHtmlFromTemplate({ project, embedded:true }); }
   catch(err) { console.error(err); return toast('Mobile viewer template is missing.'); }
-  html = html.replace('<title>DataBench Viewer v2.0.8</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
+  html = html.replace('<title>DataBench Viewer v2.0.9</title>', `<title>${escapeHtml(project.projectName || 'DataBench Viewer')}</title>`);
   downloadText(`${safeFileName(project.projectName || 'databench')}.databench.viewer.html`, html, 'text/html');
   toast('Mobile viewer HTML exported.');
 }
@@ -2802,7 +2939,7 @@ initPolishTabs();
 
 $('fileInput').addEventListener('change', async e => {
   for (const file of e.target.files) {
-    try { addSource(file.name, await parseFile(file)); toast(`Loaded ${file.name}`); }
+    try { await importDataFile(file); }
     catch(err) { console.error(err); toast(err?.message || `Could not load ${file.name}`); }
   }
   e.target.value = '';
